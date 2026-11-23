@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
+<title>迷你播放器</title>
+<script>
+/* 布局唯一owner是本页面：启动瞬间就定型（class挂在html上，首帧无闪烁），
+   窗口尺寸随后由主进程按内容实测调整（widget-fit），不再由广播/外部状态覆盖 */
+(function () {
+  var tall = null;
+  try { tall = localStorage.getItem('bp.widgetTall'); } catch (e) {}
+  if (tall == null) tall = new URLSearchParams(location.search).get('tall') === '1' ? '1' : '0';
+  if (tall === '1') document.documentElement.classList.add('tall');
+  try { localStorage.setItem('bp.widgetTall', tall); } catch (e) {}
+})();
+</script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+  html, body { background: transparent; overflow: hidden; }
+  body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+  #widget {
+    width: 420px; height: 132px; border-radius: 18px;
+    background: rgba(22, 20, 28, .93);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, .5), inset 0 0 0 1px rgba(255, 255, 255, .06);
+    display: flex; align-items: center; padding: 16px; gap: 14px;
+    -webkit-app-region: drag; position: relative; overflow: hidden;
+  }
+  .tall #widget { width: 280px; height: 392px; flex-direction: column; padding: 16px 16px 14px; gap: 10px; }
+  #cover { width: 100px; height: 100px; border-radius: 12px; overflow: hidden; flex: none; background: linear-gradient(135deg, #3a3542, #201d28); position: relative; }
+  .tall #cover { width: 248px; height: 248px; border-radius: 14px; }
+  #cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #meta { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100px; }
+  .tall #meta { height: auto; width: 100%; flex: 1; }
+  #title { color: #fff; font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #artist { color: rgba(255, 255, 255, .5); font-size: 11.5px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #bar-row { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+  #time, #dur { color: rgba(255, 255, 255, .4); font-size: 10px; flex: none; font-variant-numeric: tabular-nums; }
+  #bar { flex: 1; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .14); position: relative; -webkit-app-region: no-drag; cursor: pointer; }
+  #bar-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; border-radius: 2px; background: #fb7299; }
+  #bar-thumb { position: absolute; top: 50%; width: 10px; height: 10px; border-radius: 50%; background: #fff; transform: translate(-50%, -50%); box-shadow: 0 1px 4px rgba(0, 0, 0, .4); }
+  #ctrl { display: flex; align-items: center; justify-content: center; gap: 6px; -webkit-app-region: no-drag; }
+  .cbtn { width: 32px; height: 32px; border: none; background: transparent; color: rgba(255, 255, 255, .7); cursor: pointer; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background .15s, color .15s; }
+  .cbtn:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+  .cbtn.active { color: #fb7299; }
+  .cbtn svg { width: 15px; height: 15px; }
+  #play { width: 42px; height: 42px; border-radius: 50%; background: #fb7299; color: #fff; box-shadow: 0 3px 12px rgba(251, 114, 153, .35); }
+  #play:hover { background: #ff85a8; box-shadow: 0 4px 16px rgba(251, 114, 153, .5); }
+  #play svg { width: 18px; height: 18px; }
+  #tools { position: absolute; top: 8px; right: 10px; display: flex; gap: 2px; -webkit-app-region: no-drag; z-index: 5; }
+  .tbtn { width: 22px; height: 22px; border: none; background: rgba(0, 0, 0, .25); color: rgba(255, 255, 255, .65); cursor: pointer; border-radius: 6px; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+  .tbtn:hover { background: rgba(0, 0, 0, .5); color: #fff; }
+</style>
+</head>
+<body>
+<div id="widget">
+  <div id="tools">
+    <button class="tbtn" id="layout" title="切换布局">⊟</button>
+    <button class="tbtn" id="close" title="关闭">✕</button>
+  </div>
+  <div id="cover"><img id="cover-img" alt=""></div>
+  <div id="meta">
+    <div id="title">未在播放</div>
+    <div id="artist">在主播放器里开始播放吧</div>
+    <div id="bar-row">
+      <span id="time">0:00</span>
+      <div id="bar"><div id="bar-fill"></div><div id="bar-thumb" style="left:0%"></div></div>
+      <span id="dur">0:00</span>
+    </div>
+    <div id="ctrl">
+      <button class="cbtn" id="shuffle" title="播放模式"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg></button>
+      <button class="cbtn" id="prev" title="上一首"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6a1 1 0 0 1 2 0v12a1 1 0 0 1-2 0z"/><path d="M18.5 6.2v11.6c0 .8-.9 1.3-1.6.9l-9-5.8a1.05 1.05 0 0 1 0-1.8l9-5.8c.7-.4 1.6.1 1.6.9z"/></svg></button>
+      <button class="cbtn" id="play" title="播放/暂停"><svg id="play-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .8.87 1.3 1.56.88l11-6.86a1.04 1.04 0 0 0 0-1.76l-11-6.86A1.04 1.04 0 0 0 8 5.14z"/></svg></button>
+      <button class="cbtn" id="next" title="下一首"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6a1 1 0 0 1 2 0v12a1 1 0 0 1-2 0z"/><path d="M5.5 6.2v11.6c0 .8.9 1.3 1.6.9l9-5.8a1.05 1.05 0 0 1 0-1.8l9-5.8c.7-.4 1.6.1 1.6.9z"/></svg></button>
+      <button class="cbtn" id="mute" title="静音"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  const bc = new BroadcastChannel('biliplayer');
+  let playing = false, dragging = false, muted = false, shuffleActive = false;
+  const $ = id => document.getElementById(id);
+  const fmt = s => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  const isTall = () => document.documentElement.classList.contains('tall');
+  const fit = () => {
+    if (window.widgetAPI && window.widgetAPI.fit) { window.widgetAPI.fit(); return; }
+    try { window.resizeTo(isTall() ? 280 : 420, isTall() ? 392 : 132); } catch (e) {}
+  };
+  bc.onmessage = e => {
+    const m = e.data || {};
+    if (m.type === 'state') {
+      $('title').textContent = m.title || '未在播放';
+      $('artist').textContent = m.artist || '';
+      $('cover-img').src = m.cover || '';
+      $('cover-img').style.visibility = m.cover ? 'visible' : 'hidden';
+      playing = !!m.playing;
+      $('play-ico').innerHTML = playing
+        ? '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>'
+        : '<path d="M8 5.14v13.72c0 .8.87 1.3 1.56.88l11-6.86a1.04 1.04 0 0 0 0-1.76l-11-6.86A1.04 1.04 0 0 0 8 5.14z"/>';
+      $('time').textContent = fmt(m.time);
+      $('dur').textContent = fmt(m.dur);
+      const pct = m.dur ? Math.min(100, m.time / m.dur * 100) : 0;
+      if (!dragging) { $('bar-fill').style.width = pct + '%'; $('bar-thumb').style.left = pct + '%'; }
+      shuffleActive = !!m.shuffle;
+      $('shuffle').classList.toggle('active', shuffleActive);
+      /* 注意：不再根据广播的 tall 字段改布局 —— 布局只归本页面管 */
+    } else if (m.type === 'cmd') {
+      if (m.cmd === 'close-widget') { bc.postMessage({ type: 'widget-closed', kind: 'widget' }); window.close(); }
+    }
+  };
+  bc.postMessage({ type: 'widget-ready', kind: 'widget' });
+  $('play').onclick = () => bc.postMessage({ type: 'cmd', cmd: 'toggle' });
+  $('prev').onclick = () => bc.postMessage({ type: 'cmd', cmd: 'prev' });
+  $('next').onclick = () => bc.postMessage({ type: 'cmd', cmd: 'next' });
+  $('shuffle').onclick = () => bc.postMessage({ type: 'cmd', cmd: 'shuffle' });
+  $('mute').onclick = () => bc.postMessage({ type: 'cmd', cmd: 'mute' });
+  $('layout').onclick = () => {
+    document.documentElement.classList.toggle('tall');
+    try { localStorage.setItem('bp.widgetTall', isTall() ? '1' : '0'); } catch (e) {}
+    fit(); // 主进程按内容实测调整窗口，尺寸永远跟内容一致
+  };
+  $('close').onclick = () => { bc.postMessage({ type: 'widget-closed', kind: 'widget' }); window.close(); };
+  const bar = $('bar');
+  const seekAt = e => {
+    const r = bar.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    $('bar-fill').style.width = pct + '%'; $('bar-thumb').style.left = pct + '%';
+    bc.postMessage({ type: 'cmd', cmd: 'seek', pct });
+  };
+  bar.addEventListener('pointerdown', e => { dragging = true; seekAt(e); bar.setPointerCapture(e.pointerId); });
+  bar.addEventListener('pointermove', e => { if (dragging) seekAt(e); });
+  bar.addEventListener('pointerup', () => { dragging = false; bc.postMessage({ type: 'cmd', cmd: 'seek-end' }); });
+  fit(); // 首次载入：窗口对齐内容
+})();
+</script>
+</body>
+</html>

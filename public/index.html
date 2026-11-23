@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>哔哩播放器 · B站歌单播放器</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='5' width='20' height='15' rx='4' fill='%23fb7299'/%3E%3Cpath d='M7 2l3 3M17 2l-3 3' stroke='%23fb7299' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3Cpath d='M10 10.5v4l3.5-2z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="fullbg" aria-hidden="true"></div>
+<div id="app">
+  <aside id="sidebar">
+    <button id="side-toggle" data-action="side-toggle" title="收起/展开侧栏">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M14 6l-6 6 6 6"/></svg>
+    </button>
+    <div class="logo">
+      <svg viewBox="0 0 24 24" class="logo-icon"><rect x="2" y="5" width="20" height="15" rx="4" fill="#fb7299"/><path d="M7 2l3 3M17 2l-3 3" stroke="#fb7299" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M10 10.5v4l3.5-2z" fill="#fff"/></svg>
+      <div class="logo-txt"><b>哔哩播放器</b><span>听B站 · 做歌单</span></div>
+    </div>
+    <nav id="nav">
+      <a class="nav-item" data-action="nav" data-view="favfolders" data-icon="heart"></a>
+      <a class="nav-item" data-action="nav" data-view="search" data-icon="search"></a>
+      <a class="nav-item" data-action="nav" data-view="nowplaying" data-icon="film"></a>
+    </nav>
+    <div class="side-sec">
+      <div class="side-head"><span>我的歌单</span><span class="side-head-btns"><button class="mini-btn" data-action="viz-open" title="侧栏与播放页外观">🎨 外观</button><button class="mini-btn" data-action="pl-new">＋ 新建</button></span></div>
+      <div id="pl-list"></div>
+    </div>
+    <div id="side-user-row">
+      <div id="ne-user"></div>
+      <div id="side-user"></div>
+    </div>
+    <div id="ne-actions"></div>
+  </aside>
+
+  <main id="main">
+    <header id="topbar">
+      <div id="crumb"></div>
+      <div class="searchbox">
+        <svg viewBox="0 0 24 24" class="sb-ico"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="search-input" placeholder="搜索B站视频，回车搜索" autocomplete="off">
+        <button data-action="search-go">搜索</button>
+      </div>
+      <div id="top-right"></div>
+    </header>
+    <section id="view"></section>
+  </main>
+</div>
+
+<div id="importbar" class="hidden"></div>
+<button id="pb-toggle" data-action="pb-toggle" class="hidden" title="收起/展开播放栏">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 14l-6-6-6 6"/></svg>
+</button>
+
+<footer id="playerbar" class="hidden">
+  <canvas id="pb-wave"></canvas>
+  <div class="pb-info">
+    <img id="pb-cover" alt="">
+    <div class="pb-txt"><div id="pb-title"></div><div id="pb-up"></div></div>
+  </div>
+  <div class="pb-center">
+    <div class="pb-ctrls">
+      <button id="pb-playmode" class="pb-btn" title="播放模式"></button>
+      <button id="pb-prev" class="pb-btn" title="上一首"></button>
+      <button id="pb-play" class="pb-btn pb-playbtn" title="播放/暂停"></button>
+      <button id="pb-next" class="pb-btn" title="下一首"></button>
+    </div>
+    <div class="pb-progressrow">
+      <span id="pb-cur">0:00</span>
+      <div id="pb-track" class="pb-track"><div id="pb-line-fill"></div><div id="pb-thumb"></div></div>
+      <span id="pb-dur">0:00</span>
+    </div>
+  </div>
+  <div class="pb-right">
+    <button id="pb-widget" class="pb-btn" title="迷你播放器（桌面组件）"></button>
+    <button id="pb-desklyric" class="pb-btn" title="桌面歌词"></button>
+    <button id="pb-heart" class="pb-btn" title="心动模式（开关）"></button>
+    <button id="pb-roam" class="pb-btn" title="漫游（私人FM）"></button>
+    <button id="pb-vizset" class="pb-btn" title="播放页自定义"></button>
+    <button id="pb-mode-audio" class="pb-btn pb-mode" title="纯听模式"></button>
+    <button id="pb-mode-video" class="pb-btn pb-mode" title="看视频"></button>
+    <div class="pb-vol" id="pb-volico"></div>
+    <input id="pb-volrange" type="range" min="0" max="100" value="80" title="音量">
+    <button id="pb-queue" class="pb-btn" title="播放队列"></button>
+  </div>
+</footer>
+
+<div id="mini-video" class="hidden">
+  <div class="mini-head">
+    <span>正在播放</span>
+    <div>
+      <button data-action="mini-go" title="展开">展开</button>
+      <button data-action="mini-close" title="关闭画面">✕</button>
+    </div>
+  </div>
+  <div class="mini-body" id="mini-box"></div>
+</div>
+
+<div id="modal-root"></div>
+<div id="pop-root"></div>
+<div id="toast-root"></div>
+
+<script src="vendor/qrcode.js" onerror="window.__qrMissing=true"></script>
+<script src="js/api.js"></script>
+<script src="js/audiofx.js"></script>
+<script src="js/player.js"></script>
+<script src="js/lyricmv.js"></script>
+<script src="js/folia-bridge.js"></script>
+<script src="js/app.js"></script>
+<script src="js/room.js"></script>
+</body>
+</html>

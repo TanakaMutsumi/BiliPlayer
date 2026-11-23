@@ -1,0 +1,17 @@
+Folia runtimes / visualizers — personal-use copy
+===============================================
+These files are extracted from the locally installed Folia application
+(D:\folia\resources\app.asar) for the owner's personal, non-distributed
+use in this player.
+
+Folia is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+If this player is ever distributed or used as a network service, the AGPL
+obligations (source disclosure and license preservation) apply.
+Do not redistribute this directory as part of a closed-source product.
+
+The original Folia copyright and license notices remain in the extracted
+files and in the licenses/ directory.
+
+noLyricLines-Dn3DI4dd.js has a minimal local patch that exposes Folia's
+bundled ReactDOM createRoot for mounting the original React visualizers
+(Tilt / Claddagh / Cadenza) inside this player. No Folia code is relicensed.

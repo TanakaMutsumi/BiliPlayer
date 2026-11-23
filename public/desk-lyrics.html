@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
+<title>桌面歌词</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+  html, body { background: transparent; overflow: hidden; }
+  body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+  /* 穿透态：整窗不拦截鼠标；body.clickthrough 由主进程在加载后加上 */
+  body.clickthrough { pointer-events: none; }
+  #wrap {
+    width: 100vw; height: 100vh; position: relative;
+    -webkit-app-region: drag; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  }
+  #tools { position: absolute; top: 4px; right: 8px; display: flex; gap: 4px; -webkit-app-region: no-drag; z-index: 5; opacity: 0; transition: opacity .2s; }
+  #wrap:hover #tools { opacity: 1; }
+  /* 可交互热区：歌词文本 + 工具钮。hover 时解除穿透，移开恢复 */
+  #cur, #next, #tools { pointer-events: auto; }
+  .tbtn { height: 22px; padding: 0 8px; border: none; background: rgba(0, 0, 0, .45); color: rgba(255, 255, 255, .8); cursor: pointer; border-radius: 6px; font-size: 11px; }
+  .tbtn:hover { background: rgba(0, 0, 0, .7); color: #fff; }
+  #cur {
+    font-size: 26px; font-weight: 800; color: #fb7299; text-align: center; line-height: 1.3;
+    text-shadow: 0 0 1px rgba(0, 0, 0, .5), 0 2px 8px rgba(0, 0, 0, .55), 0 0 24px rgba(251, 114, 153, .25);
+    max-width: 96vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transform: translateY(0); transition: transform .25s ease;
+  }
+  #next {
+    font-size: 18px; font-weight: 600; color: rgba(255, 255, 255, .38); text-align: center; line-height: 1.3;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, .5);
+    max-width: 96vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #cur.empty, #next.empty { visibility: hidden; }
+  /* 让鼠标能命中歌词文本：#wrap 的 drag 不吸收文本区域 */
+  #cur, #next { -webkit-app-region: no-drag; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="tools">
+    <button class="tbtn" id="close">✕ 关闭桌面歌词</button>
+  </div>
+  <div id="cur" class="empty">尚未播放</div>
+  <div id="next" class="empty"></div>
+</div>
+<script>
+(function () {
+  const bc = new BroadcastChannel('biliplayer');
+  const $ = id => document.getElementById(id);
+  /* 鼠标穿透（主进程轮询方案）：
+     setIgnoreMouseEvents 的 forward 模式下页面收不到 mouseenter/leave，
+     因此由主进程轮询鼠标坐标并对照页面热区来切换穿透，页面只负责上报热区矩形。 */
+  const hasAPI = typeof window.widgetAPI !== 'undefined' && window.widgetAPI.setClickthrough;
+  function rects() {
+    const out = [];
+    ['cur', 'next', 'tools'].forEach(id => {
+      const el = $(id);
+      if (!el) return;
+      const cs = getComputedStyle(el);
+      if (cs.visibility === 'hidden' || cs.display === 'none') return;
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) out.push({ x: r.left, y: r.top, w: r.width, h: r.height });
+    });
+    return out;
+  }
+  if (hasAPI) {
+    window.widgetAPI.setClickthrough(true, rects());
+    setInterval(() => window.widgetAPI.setClickthrough(null, rects()), 400); // 热区变动时上报（换行/工具钮显隐）
+  }
+  bc.onmessage = e => {
+    const m = e.data || {};
+    if (m.type !== 'state') return;
+    const cur = m.line || '';
+    const nxt = m.lineNext || '';
+    $('cur').textContent = cur || '';
+    $('next').textContent = nxt || '';
+    $('cur').classList.toggle('empty', !cur);
+    $('next').classList.toggle('empty', !nxt);
+    // 换行时轻微上滑动画
+    if ($('cur').dataset.last !== cur && cur) {
+      $('cur').dataset.last = cur;
+      $('cur').style.transform = 'translateY(6px)';
+      requestAnimationFrame(() => { $('cur').style.transform = 'translateY(0)'; });
+    }
+  };
+  bc.postMessage({ type: 'widget-ready', kind: 'desk-lyrics' });
+  $('close').onclick = () => { bc.postMessage({ type: 'widget-closed', kind: 'desk-lyrics' }); if (hasAPI) window.widgetAPI.setClickthrough(false, []); window.close(); };
+  window.addEventListener('beforeunload', () => bc.postMessage({ type: 'widget-closed', kind: 'desk-lyrics' }));
+})();
+</script>
+</body>
+</html>

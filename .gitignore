@@ -1,0 +1,32 @@
+# ---- 以下四条是开发者原有的规则 ----
+data/
+dist/
+node_modules/
+server.log
+
+# ---- 以下为补全 ----
+# 日志与临时文件
+*.log
+*.bak
+*.tmp
+*.orig
+*.rej
+
+# 临时 / 测试 / 备份目录（与 scripts/package-app.js 的排除列表保持一致）
+tmp/
+tmp-*/
+tmp-npm/
+backup/
+.ref/
+_dist_*/
+
+# 根目录下的一次性补丁脚本（如 _g1.js、_pf.js）
+/_*.js
+
+# AI 编码工具、编辑器与系统杂物
+.zcode/
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store

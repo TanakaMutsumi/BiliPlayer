@@ -1,0 +1,44 @@
+BiliPlayer 源码工程使用说明
+
+一、环境要求
+- Windows 10/11 x64
+- Node.js 20 或更高版本（推荐 Node 22/24）
+- npm（随 Node.js 安装）
+- 首次 npm install 需要联网
+
+二、目录结构
+- server.js            本地 HTTP/API 服务
+- src/                 B站/网易云/歌词/一起听房间与隧道服务
+- public/              前端页面、样式、播放器、音效、歌词/MV、一起听客户端
+- electron/            Electron 主进程/预加载
+- scripts/             打包、音频测试、CDP 调试工具
+- docs/                音质/一起听/歌词/MV 文档
+- bin/cloudflared.exe  cloudflared 2026.11.1（一起听公网隧道，Apache-2.0）
+- assets/              图标等资源
+- package.json / package-lock.json
+
+三、开发运行
+1. 解压整个文件夹。
+2. 在目录内打开终端：
+   npm install
+   npm start
+3. 纯网页模式（调试用）：
+   npm run start:web
+   浏览器打开 http://127.0.0.1:8899
+
+四、重新打包
+npm run dist
+- 输出到 dist/BiliPlayer-win32-x64
+- 打包脚本会把 bin/cloudflared.exe 复制到 resources/bin，请勿删除 bin 目录
+- 打包前请关闭正在运行的 BiliPlayer.exe / electron.exe，避免文件占用
+
+五、测试
+npm run test:audio
+- 动态 EQ、混响避让/ER、瞬态、去齿音、频谱快照、限幅 ISP 共 6 套离线测试
+
+六、须知
+- 源码包不包含 node_modules、dist、backup、data、.zcode，需要 npm install 安装依赖。
+- 如果只想直接运行、不装 Node，请使用运行版压缩包。
+- 用户登录 Cookie、歌单、设置保存在 %APPDATA%\BiliPlayer，不要把这个目录打包分享。
+- 一起听依赖 cloudflared；如果自行替换二进制，请保留 Apache-2.0 许可证。
+- 未做 Windows 代码签名；打包后的 exe 首次运行可能触发 SmartScreen。

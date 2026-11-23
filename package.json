@@ -1,0 +1,22 @@
+{
+  "name": "bili-music-player",
+  "version": "1.0.0",
+  "description": "哔哩播放器 - B站歌单播放器（登录/收藏导入/搜索/歌单/听或看）",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "start:web": "node server.js",
+    "icon": "node scripts/make-icon.js",
+    "dist": "node scripts/package-app.js",
+    "test:audio": "node scripts/test-dyneq.mjs && node scripts/test-duck-er.mjs && node scripts/test-transient.mjs && node scripts/test-deesser.mjs && node scripts/test-spectrum.mjs && node scripts/test-limiter.mjs"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^45.2.1"
+  },
+  "dependencies": {
+    "NeteaseCloudMusicApi": "^4.32.0",
+    "ws": "^8.23.0"
+  }
+}
