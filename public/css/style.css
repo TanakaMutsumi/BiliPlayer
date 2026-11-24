@@ -3236,4 +3236,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid rgba(251,114,153,
 body.immersive.pb-on:not(.pb-collapsed):not(.np-fs) .npc-btns { display: none; }
 /* 纯听全屏时播放栏本来就不显示，“收起/展开播放栏”的小按钮也不该留在画面里 */
 body.np-fs #pb-toggle { display: none !important; }
+/* 音效面板的预设分组：源码版原有的一组不带标题，转来的两组各带一个标题 */
+.fx-group + .fx-group { margin-top: 14px; }
+.fx-group-head { font-size: 13px; font-weight: 600; margin: 0 0 8px; color: var(--t1); }
 

@@ -1615,7 +1615,7 @@ function rcFxState() {
   return {
     preset: String(s.preset || ''), reverb: s.env && s.env !== 'none' ? s.env : 'off',
     space3d: !!s.rotate && s.rotate !== 'off', vocalCut: s.vocal === 'side', width: s.width || 1,
-    comp: false, subBass: (s.eq.bass || 0) >= 6, air: (s.eq.treble || 0) >= 5, norm: !!s.autoLevel
+    comp: !!s.comp, subBass: (s.eq.bass || 0) >= 6, air: (s.eq.treble || 0) >= 5, norm: !!s.autoLevel
   };
 }
 function rcPresetId(name) {
@@ -6842,6 +6842,15 @@ function bindEvents() {
       AudioFX.setVolume(v);
       toast(d > 0 ? '🔊 音量 ' + Math.round(v * 100) + '%' : '🔉 音量 ' + Math.round(v * 100) + '%');
     };
+    /* 数字键 1–9：在播放页快速切换常用音效（打包版的快捷键；空灵韵与源码版预设重名，转换后叫 g-ethereal） */
+    if (/^[1-9]$/.test(e.key) && state.view.name === 'nowplaying') {
+      const id = ['original', 'hifi', 'sbass', 'vocalc', 'female', 'male', 'pure', 'g-ethereal', 'liyin3d'][+e.key - 1];
+      if (window.AudioFX && AudioFX.PRESETS && AudioFX.PRESETS[id]) {
+        AudioFX.setPreset(id);
+        toast('音效：' + AudioFX.PRESETS[id].label, 'success');
+      }
+      return;
+    }
     switch (e.key) {
       case 'ArrowLeft':
         if (el && isFinite(el.duration)) { e.preventDefault(); Player.seek(Math.max(0, el.currentTime - 5)); }
@@ -7769,11 +7778,19 @@ function fxTabHtml(tab) {
             '<button class="btn" data-fxc-apply="' + x.id + '">应用</button><button class="btn" data-fxc-del="' + x.id + '">删除</button></div>').join('') + '</div>'
         : '<div class="fx-note">还没有保存的自定义预设。</div>') +
       '</div>';
-    return bypassTip + customTip + customHtml + '<div class="fx-cards">' + Object.entries(AudioFX.PRESETS).map(([k, p]) => `
+    /* 预设分三组：源码版原有的（不带标题）、从打包版转来的“银河音效”和“风格均衡” */
+    const card = ([k, p]) => `
       <div class="fx-card ${cur === k ? 'active' : ''}" data-fxp="${k}">
         <div class="fx-card-name">${esc(p.label)}${cur === k ? ' ✓' : ''}</div>
-        <div class="fx-card-desc">${esc(p.desc)}</div>
-      </div>`).join('') + '</div>' +
+        <div class="fx-card-desc">${esc(p.desc || '')}</div>
+      </div>`;
+    const groupHtml = (ids, title) => '<div class="fx-group">' + (title ? `<div class="fx-group-head">${esc(title)}</div>` : '') +
+      '<div class="fx-cards">' + ids.map(k => card([k, AudioFX.PRESETS[k]])).join('') + '</div></div>';
+    const all = Object.keys(AudioFX.PRESETS);
+    return bypassTip + customTip + customHtml +
+      groupHtml(all.filter(k => !AudioFX.PRESETS[k].group), '') +
+      groupHtml(all.filter(k => AudioFX.PRESETS[k].group === 'galaxy'), '银河音效（来自打包版，已转成这套引擎的参数）') +
+      groupHtml(all.filter(k => AudioFX.PRESETS[k].group === 'eq'), '风格均衡（只有均衡曲线，来自打包版）') +
       '<div class="fx-note">点卡片即生效；滑杆细调在「均衡器」「高级」页。戴耳机体验环绕类效果更佳。</div>';
   }
   if (tab === 'eq') {

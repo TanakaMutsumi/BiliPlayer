@@ -8,7 +8,7 @@
   const CUSTOM_FIELDS = [
     'eq', 'width', 'widthHigh', 'depth', 'env', 'rotate', 'tube', 'tape', 'exciter',
     'night', 'nightAmount', 'vocal', 'crossfeed', 'crossfeedMid', 'cfDelay', 'cfFreq',
-    'preamp', 'monoBass', 'presetTrim', 'autoLevel', 'fdnReverb', 'deEsser',
+    'preamp', 'monoBass', 'presetTrim', 'autoLevel', 'fdnReverb', 'deEsser', 'comp',
     'fdnSize', 'fdnDecay', 'fdnDamping', 'fdnEr', 'envPre', 'reverbDuck',
     'transient', 'transientSustain', 'transientHigh', 'transientFreq', 'loudness', 'deFreq', 'bassFreq',
     'dynEq', 'dynEqLow', 'dynEqMid', 'dynEqHigh', 'dynEqFLow', 'dynEqQLow', 'dynEqThLow', 'dynEqFMid', 'dynEqQMid', 'dynEqThMid', 'dynEqFHigh', 'dynEqQHigh', 'dynEqThHigh', 'bassExciter'
@@ -44,14 +44,73 @@
     cassette: { label: '怀旧卡带机', desc: '还原老式卡带播放效果', apply: { tape: 0.85, eqBands: [0, 1, 0, 0, 0, 0, 0, -1.5, -4, -7], presetTrim: 1.2 } },
     ethereal: { label: '空灵人声', desc: '空灵飘渺的氛围感', apply: { env: 'church', depth: 0.85, exciter: 0.12, width: 1.3, eqBands: [0, 0, -1, 0, 0, 0, 0, 1.5, 2.5, 2.5], rotate: '3d', presetTrim: -3.0 } },
     headphone: { label: '耳机优化', desc: '交叉馈送 + 低频单声道，降低耳机声场疲劳', apply: { crossfeed: 0.55, eqBass: 1.5, eqTreble: -0.5, monoBass: true, preamp: -1, presetTrim: 1.2 } },
-    headphonePlus: { label: '耳机优化+', desc: '双频段交叉馈送，人声更靠前、声场更自然', apply: { crossfeed: 0.7, crossfeedMid: 0.35, eqBass: 2, eqTreble: -1, monoBass: true, preamp: -1.5, presetTrim: -1.0 } }
+    headphonePlus: { label: '耳机优化+', desc: '双频段交叉馈送，人声更靠前、声场更自然', apply: { crossfeed: 0.7, crossfeedMid: 0.35, eqBass: 2, eqTreble: -1, monoBass: true, preamp: -1.5, presetTrim: -1.0 } },
+
+  /* ---- 以下预设来自打包版的“音效工作台”，已转成这套引擎的参数（BEGIN，由 tmp/merge-tools 下的脚本生成，勿手改） ----
+   均衡曲线是按频响拟合出来的，不是照搬数值：打包版是 7 段固定 Q=0.9 的均衡器，这里是 10 段比例 Q。
+   eqQ 就是为此带来的固定 Q；comp 是动态压缩；env/depth 对应它的混响，rotate 对应它的 3D 环绕，都只能近似。
+   presetTrim 是响度对齐值（以“原声”为基准，正数 = 补回音量）。group 用来在面板上分组：
+   galaxy = 音效预设（均衡 / 混响 / 环绕的组合），eq = 风格均衡（只有均衡曲线）。
+   与源码版原有预设重名的两个带 g- 前缀（g-ethereal、g-concert）。 */
+    hifi: { label: 'HiFi 高保真', desc: '均衡 + 立体声加宽', group: 'galaxy', fit: 0.23, apply: { eqBass: 0.7, eqTreble: -0.4, eqBands: [0.3, 1.5, 0.4, 0, -0.1, -0.1, 0.3, 0.3, 2.9, 3], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], width: 1.3, presetTrim: 0 } },
+    sbass: { label: '超重低音', desc: '均衡 + 动态压缩', group: 'galaxy', fit: 0.56, apply: { eqBass: 10, eqTreble: 0.2, eqBands: [-0.3, 6, 8.9, 3.4, 2.4, -0.5, -1.1, -0.4, -0.8, -1.4], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], comp: true, presetTrim: 0 } },
+    vocalc: { label: '清澈人声', desc: '均衡 + 动态压缩', group: 'galaxy', fit: 0.39, apply: { eqBass: 1.8, eqTreble: 3.7, eqBands: [-2.3, -6, -3.5, 0, 3.2, 4.8, 4.9, 3.8, 3.7, -1.8], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], comp: true, presetTrim: -1.4 } },
+    female: { label: '温柔女声', desc: '均衡 + 动态压缩', group: 'galaxy', fit: 0.3, apply: { eqBass: 2.3, eqTreble: 4.3, eqBands: [-2.4, -4.7, -1.9, 0.6, 2.9, 5.8, 5, 3.1, 3.8, -1.3], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], comp: true, presetTrim: -0.8 } },
+    male: { label: '浑厚男声', desc: '均衡 + 动态压缩', group: 'galaxy', fit: 0.41, apply: { eqBass: 1.6, eqTreble: 2.2, eqBands: [2.1, 5.4, 3.7, 2, 1.5, 1.1, -0.5, -0.9, -4.2, -5.1], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], comp: true, presetTrim: -2.1 } },
+    pure: { label: '超纯净人声', desc: '均衡 + 动态压缩', group: 'galaxy', fit: 0.66, apply: { eqBass: -2.4, eqTreble: 4.4, eqBands: [1, -6, -4.8, -2.2, 0.2, 6.3, 6.4, 5.2, 1.5, -5.6], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], comp: true, presetTrim: 0 } },
+    'g-ethereal': { label: '空灵韵', desc: '均衡 + 混响·音乐厅 + 立体声加宽', group: 'galaxy', fit: 0.83, apply: { eqBass: -2.3, eqTreble: 0.1, eqBands: [-1.9, -5.3, -3.5, -3.7, -3.5, -0.1, 1.3, 4.3, 6, 6], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], env: 'hall', depth: 0.9, width: 1.6, presetTrim: 0 } },
+    liyin3d: { label: '3D丽音', desc: '均衡 + 3D环绕 + 立体声加宽 + 动态压缩', group: 'galaxy', fit: 0.21, apply: { eqBass: 0.3, eqTreble: 0.1, eqBands: [-0.4, -2, -0.1, 0.7, 1.9, 3.1, 4.1, 3, 1.7, -0.3], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], rotate: '360', width: 1.7, comp: true, presetTrim: 2.8 } },
+    pano: { label: '全景环绕', desc: '均衡 + 3D环绕 + 立体声加宽 + 动态压缩', group: 'galaxy', fit: 0.2, apply: { eqBass: -0.1, eqTreble: -1.3, eqBands: [0.1, 1.9, -0.1, -0.1, 0.1, 1.5, 2.6, 1, 1.3, 2.5], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], rotate: '8d', width: 2, comp: true, presetTrim: 0 } },
+    dolby: { label: '全景声模拟', desc: '均衡 + 混响·小房间 + 3D环绕 + 立体声加宽 + 动态压缩', group: 'galaxy', fit: 0.39, apply: { eqBass: -0.9, eqTreble: -2.3, eqBands: [0.7, 2.3, -0.3, -0.3, 0, 1.3, 3.1, 2.2, 4.7, 5.1], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], env: 'bathroom', depth: 0.4, rotate: '360', width: 1.8, comp: true, presetTrim: 0 } },
+    stereo: { label: '立体声宽', desc: '均衡 + 立体声加宽 + 动态压缩', group: 'galaxy', fit: 0.17, apply: { eqBass: -0.2, eqTreble: -0.7, eqBands: [0.1, 0.1, 0, -0.1, 0, -0.2, 1.4, 1.8, 2.8, 1.8], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], width: 2.2, comp: true, presetTrim: 0 } },
+    earbuds: { label: '悦耳耳机', desc: '均衡 + 3D环绕 + 立体声加宽 + 动态压缩', group: 'galaxy', fit: 0.25, apply: { eqBass: -1.3, eqTreble: -0.9, eqBands: [1.5, 4.2, 1.7, 0.1, -0.9, 1.8, 2.9, 2.9, 3.3, 1.8], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], rotate: '3d', width: 1.5, comp: true, presetTrim: 0 } },
+    hall: { label: '音乐厅', desc: '均衡 + 混响·音乐厅 + 立体声加宽', group: 'galaxy', fit: 0.24, apply: { eqBass: -0.2, eqTreble: -1, eqBands: [0.2, 0.9, 0.8, 0.2, -0.1, -0.2, 1.3, 2.1, 4, 2.6], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], env: 'hall', depth: 1, width: 1.3, presetTrim: 1.1 } },
+    plaza: { label: '音乐广场', desc: '均衡 + 混响·小房间 + 立体声加宽', group: 'galaxy', fit: 0.21, apply: { eqBass: -1.5, eqTreble: -0.8, eqBands: [1.7, 4.2, 2.3, 1.2, 0.5, -0.1, 0.5, 1.5, 2.9, 1.8], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], env: 'bathroom', depth: 0.8, width: 1.4, presetTrim: 0 } },
+    live: { label: '演唱会', desc: '均衡 + 混响·音乐厅 + 立体声加宽 + 动态压缩', group: 'galaxy', fit: 0.23, apply: { eqBass: 1.5, eqTreble: -0.7, eqBands: [1.6, 5.4, 2.5, 1.4, 1.5, 1.3, 3.1, 2.8, 3.3, 1.7], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], env: 'hall', depth: 0.9, width: 1.5, comp: true, presetTrim: 0 } },
+    chicago: { label: '芝加哥剧院', desc: '均衡 + 混响·大教堂 + 立体声加宽', group: 'galaxy', fit: 0.46, apply: { eqBass: -0.8, eqTreble: -3, eqBands: [0.4, 1.8, 1.3, 0.2, -0.5, -0.5, 1.6, 2.9, 6, 6], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], env: 'church', depth: 0.9, width: 1.4, presetTrim: 0 } },
+    musical: { label: '音乐剧', desc: '均衡 + 混响·音乐厅 + 立体声加宽', group: 'galaxy', fit: 0.22, apply: { eqBass: -1.6, eqTreble: -0.9, eqBands: [1.6, 2.6, 1.4, 1.1, 1.5, 1.2, 3.1, 2.8, 3.3, 1.8], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], env: 'hall', depth: 0.9, width: 1.4, presetTrim: 0 } },
+    karaoke: { label: 'K歌跟唱', desc: '均衡 + 混响·小房间 + 人声消除 + 动态压缩', group: 'galaxy', fit: 0.29, apply: { eqBass: 1.7, eqTreble: 1, eqBands: [-1.8, -3.4, -1.8, 0.2, 2.1, 4.1, 4.1, 3.2, 1.3, -1.8], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], env: 'bathroom', depth: 0.6, vocal: 'side', comp: true, presetTrim: 0 } },
+    phone: { label: '电话音', desc: '均衡 + 动态压缩', group: 'galaxy', fit: 1.55, apply: { eqBass: -10, eqTreble: 0.2, eqBands: [5.5, -6, -12, -5.3, -1.1, 7.2, 8.2, 8.5, -1, -6], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], comp: true, presetTrim: -0.7 } },
+    vinylfx: { label: '黑胶复古', desc: '均衡 + 混响·录音棚', group: 'galaxy', fit: 0.37, apply: { eqBass: 1.3, eqTreble: -2.4, eqBands: [1.6, 5.5, 1.7, 0.3, -0.4, -0.9, -1.7, -1.4, 1.9, 4.8], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], env: 'bathroom', depth: 0.3, presetTrim: 0 } },
+    cozy: { label: '温馨卧室', desc: '均衡 + 混响·小房间 + 立体声加宽', group: 'galaxy', fit: 0.28, apply: { eqBass: 1.1, eqTreble: -1.4, eqBands: [1.9, 4.5, 2.7, 0.6, -0.4, -1.8, -1.9, -0.6, 2.2, 3.1], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], env: 'bathroom', depth: 0.6, width: 1.3, presetTrim: 0 } },
+    midnight: { label: '午夜慵懒', desc: '均衡 + 混响·小房间 + 立体声加宽', group: 'galaxy', fit: 0.31, apply: { eqBass: 5, eqTreble: -1.2, eqBands: [0.7, 6, 4.8, 1.3, -0.7, -2.4, -3.6, -1.5, 1.1, 2.4], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], env: 'bathroom', depth: 0.6, width: 1.3, presetTrim: 0 } },
+    street: { label: '漫步街头', desc: '均衡 + 立体声加宽 + 动态压缩', group: 'galaxy', fit: 0.34, apply: { eqBass: -1.7, eqTreble: -2, eqBands: [1.7, 4.3, 1.6, -0.4, -1.9, 0.1, 1.1, 2, 4.3, 4.2], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], width: 1.5, comp: true, presetTrim: 0 } },
+    smart: { label: '智能动态', desc: '均衡 + 立体声加宽 + 动态压缩', group: 'galaxy', fit: 0.17, apply: { eqBass: -1, eqTreble: -0.4, eqBands: [1.2, 3.2, 1.5, 0.9, 0.7, 1.6, 2.3, 2.3, 2.3, 0.8], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], width: 1.4, comp: true, presetTrim: 0 } },
+    rhythm: { label: '悦动节奏', desc: '均衡 + 立体声加宽 + 动态压缩', group: 'galaxy', fit: 0.34, apply: { eqBass: 1.7, eqTreble: -1.9, eqBands: [1.5, 6, 2.8, 0.2, -1.2, 3.1, 0.3, 1.6, 4.4, 4], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], width: 1.5, comp: true, presetTrim: 0 } },
+    heartbeat: { label: '心跳节奏', desc: '均衡 + 动态压缩', group: 'galaxy', fit: 0.65, apply: { eqBass: 10, eqTreble: -0.1, eqBands: [0.1, 6, 8.8, 1.3, -0.7, -1.5, 1.3, 0.4, -1.2, -1.3], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], comp: true, presetTrim: -5 } },
+    london: { label: '伦敦耳语', desc: '均衡 + 混响·录音棚', group: 'galaxy', fit: 0.94, apply: { eqBass: -2.4, eqTreble: 0, eqBands: [-2.5, -6, -5.1, -2.7, -0.3, 0.9, 1.4, 3.9, 6, 6], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], env: 'bathroom', depth: 0.3, presetTrim: 0.6 } },
+    anime: { label: '二次元提亮', desc: '均衡 + 立体声加宽 + 动态压缩', group: 'galaxy', fit: 0.69, apply: { eqBass: -1.9, eqTreble: 0.6, eqBands: [-1.5, -3.3, -1.8, -1.2, 0.1, 1.5, 2.9, 4.3, 6, 6], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], width: 1.4, comp: true, presetTrim: 0 } },
+    game: { label: '游戏沉浸', desc: '均衡 + 混响·音乐厅 + 立体声加宽 + 动态压缩', group: 'galaxy', fit: 0.44, apply: { eqBass: 6.7, eqTreble: -1.7, eqBands: [-0.9, 6, 3.7, 0.9, -0.5, 1.6, 2.5, 4.1, 6, 3.5], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], env: 'hall', depth: 0.8, width: 1.9, comp: true, presetTrim: 0 } },
+    studio: { label: '录音棚', desc: '混响·录音棚 + 动态压缩', group: 'galaxy', fit: 0, apply: { eqBass: 0, eqTreble: 0, eqBands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], env: 'bathroom', depth: 0.3, comp: true, presetTrim: -1.4 } },
+    rich: { label: '醇厚人声', desc: '均衡 + 立体声加宽 + 动态压缩', group: 'galaxy', fit: 0.12, apply: { eqBass: 1.9, eqTreble: 0, eqBands: [0.3, 2.9, 1, 0.2, 0.1, 1.7, 2.5, 1.4, 0.5, 0], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], width: 1.2, comp: true, presetTrim: 0 } },
+    punch: { label: '冲击力', desc: '均衡 + 立体声加宽 + 动态压缩', group: 'galaxy', fit: 0.41, apply: { eqBass: 3.4, eqTreble: -1.1, eqBands: [4.2, 6, 4.5, 2, -0.7, -1, 1.2, 1.8, 2.7, 2], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], width: 1.3, comp: true, presetTrim: 0 } },
+    crystal: { label: '水晶通透', desc: '均衡 + 立体声加宽', group: 'galaxy', fit: 0.91, apply: { eqBass: -3.1, eqTreble: 4.3, eqBands: [-1.1, -2.1, -2.4, -1.7, -0.4, 1.2, 1.6, 4.1, 6, 6], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], width: 1.4, presetTrim: 0 } },
+    cinema: { label: '影院环绕', desc: '均衡 + 混响·音乐厅 + 3D环绕 + 立体声加宽 + 动态压缩', group: 'galaxy', fit: 0.35, apply: { eqBass: 3.2, eqTreble: 3.6, eqBands: [3.5, 3, 1, 0.7, -0.3, 1.6, 2.9, 3.1, 4.8, 2.9], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], env: 'hall', depth: 0.7, rotate: '360', width: 1.8, comp: true, presetTrim: 4.6 } },
+    galaxy: { label: '银河幻境', desc: '均衡 + 混响·音乐厅 + 3D环绕 + 立体声加宽', group: 'galaxy', fit: 0.73, apply: { eqBass: -2.7, eqTreble: 4, eqBands: [-0.8, -2.9, -1.9, -1.2, 0.1, 1.5, 2.9, 4.8, 6, 6], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], env: 'hall', depth: 1, rotate: '360', width: 2, presetTrim: 6 } },
+    spatial: { label: '空间音频', desc: '均衡 + 3D环绕 + 立体声加宽 + 动态压缩', group: 'galaxy', fit: 0.13, apply: { eqBass: 1, eqTreble: -0.2, eqBands: [-0.9, -0.5, -0.1, 0.4, 0.9, 2.5, 2.5, 1.7, 1.7, 0.8], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], rotate: '3d', width: 1.6, comp: true, presetTrim: 1.1 } },
+    warmtube: { label: '温暖电子管', desc: '均衡 + 立体声加宽 + 动态压缩', group: 'galaxy', fit: 0.14, apply: { eqBass: 1.8, eqTreble: 0.7, eqBands: [1.4, 4.4, 2, 0.4, 0, 0.8, 1.7, 0.8, -0.6, -1.3], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], width: 1.1, comp: true, presetTrim: 0 } },
+    nightcore: { label: '夜核加速', desc: '均衡 + 立体声加宽', group: 'galaxy', fit: 1.01, apply: { eqBass: -5.7, eqTreble: 6.3, eqBands: [1, 2.9, -2.6, -2.9, -2.5, -0.7, 0.2, 3.1, 6, 6], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], width: 1.3, presetTrim: 1.2 } },
+    bassboost: { label: '低音炮', desc: '均衡 + 动态压缩', group: 'galaxy', fit: 0.84, apply: { eqBass: 10, eqTreble: -0.7, eqBands: [6, 6, 9.9, 2.6, 2.5, -1.6, -2, -1.2, -2.6, -3.3], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], comp: true, presetTrim: -5.9 } },
+    'g-concert': { label: '现场音乐会', desc: '均衡 + 混响·音乐厅 + 立体声加宽 + 动态压缩', group: 'galaxy', fit: 0.29, apply: { eqBass: 2.7, eqTreble: 4.2, eqBands: [1.7, 6, 3.7, 1.2, 0.6, 1.4, 3.8, 3.6, 4.3, 1.7], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], env: 'hall', depth: 0.9, width: 1.7, comp: true, presetTrim: 0 } },
+    pop: { label: '流行', desc: '均衡 + 动态压缩', group: 'eq', fit: 0.24, apply: { eqBass: -0.1, eqTreble: -0.3, eqBands: [0.3, 2, 0.6, 1, 1.8, 3.1, 4.8, 3.6, 2.8, 0.7], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], comp: true, presetTrim: -2 } },
+    rock: { label: '摇滚', desc: '均衡 + 动态压缩', group: 'eq', fit: 0.7, apply: { eqBass: 1.5, eqTreble: -2.3, eqBands: [0.2, 6, 4.7, 0.1, -3, -4.4, 0, 2.2, 6, 6], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], comp: true, presetTrim: -1.5 } },
+    edm: { label: '电子', desc: '均衡 + 动态压缩', group: 'eq', fit: 0.78, apply: { eqBass: 2, eqTreble: -3.1, eqBands: [-2.2, 6, 3.9, 0.7, -1.9, -2.9, -0.8, 3.3, 6, 6], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], comp: true, presetTrim: -1.9 } },
+    jazz: { label: '爵士', desc: '均衡', group: 'eq', fit: 0.37, apply: { eqBass: -1.5, eqTreble: -1.9, eqBands: [1.7, 6, 2.9, 1.8, 1, -2, -1.9, -0.3, 3.3, 4.1], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], presetTrim: 0.4 } },
+    classical: { label: '古典', desc: '均衡', group: 'eq', fit: 0.5, apply: { eqBass: -2, eqTreble: -2.4, eqBands: [1.8, 4.5, 1.3, 0.3, -0.4, -0.2, -0.2, -0.2, 4.1, 6], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], presetTrim: 1.2 } },
+    bright: { label: '高音增强', desc: '均衡', group: 'eq', fit: 1.12, apply: { eqBass: -5.5, eqTreble: 0.6, eqBands: [0, 0.5, -3, -3.1, -3.1, -2.6, -3, 2.5, 6, 6], eqQ: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], presetTrim: 2.3 } },
+  /* 打包版预设（END）---- */
   };
 
   function defaultState() {
     return {
       preset: 'original',
       speed: 1,
-      eq: { bass: 0, treble: 0, bands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+      /* q：逐段 Q 值覆盖（null = 用比例 Q）。只有从打包版转换来的预设用它：那边的均衡器是固定 Q=0.9 的宽峰，
+         这边的比例 Q 在大增益时峰很窄，照搬数值会走样，所以允许预设自带 Q 值。手动拖了某一段滑杆，那一段就回到比例 Q */
+      eq: { bass: 0, treble: 0, bands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], q: null },
+      /* comp：单段动态压缩（压缩比 4 / 阈值 -22dB，带补偿增益）。源码版原有的“夜听”是另一种用途的三段压缩，
+         打包版有 30 个预设靠它出“更饱满有力”的听感，所以单独加一个开关。默认关 */
+      comp: false,
       width: 1, widthHigh: 1, depth: 0, env: 'none',
       rotate: 'off', tube: 0, tape: 0, exciter: 0,
       night: false, pitch: 0, vocal: 'normal', crossfeed: 0, crossfeedMid: 0, cfDelay: 0.3, cfFreq: 700, preamp: 0, monoBass: false, presetTrim: 0,
@@ -78,11 +137,12 @@
     }
   } catch (e) {}
 
-  /* 状态→预设检测：声音色彩模块全部中性=original；与某预设配方完全一致=该预设；否则=custom */
+  /* 状态→预设检测：声音色彩模块全部中性=original；与某预设配方完全一致=该预设；否则=custom
+     （人声消除、动态压缩、逐段 Q 值也参与比较，否则转换来的预设一应用就会被判成 custom） */
   function detectPreset(s) {
     const d = defaultState();
-    const colorKeys = ['env', 'rotate', 'width', 'depth', 'tube', 'tape', 'exciter', 'crossfeed', 'crossfeedMid', 'preamp', 'monoBass'];
-    const eqNeutral = s.eq.bass === 0 && s.eq.treble === 0 && s.eq.bands.every(v => !v);
+    const colorKeys = ['env', 'rotate', 'width', 'depth', 'tube', 'tape', 'exciter', 'crossfeed', 'crossfeedMid', 'preamp', 'monoBass', 'vocal', 'comp'];
+    const eqNeutral = s.eq.bass === 0 && s.eq.treble === 0 && s.eq.bands.every(v => !v) && !hasQ(s.eq.q);
     if (colorKeys.every(k => s[k] === d[k]) && eqNeutral) return 'original';
     for (const k of Object.keys(PRESETS)) {
       if (k === 'original') continue;
@@ -94,10 +154,18 @@
       }
       const same = colorKeys.every(k2 => s[k2] === eff[k2]) &&
         s.eq.bass === eff.eq.bass && s.eq.treble === eff.eq.treble &&
+        sameQ(s.eq.q, PRESETS[k].apply && PRESETS[k].apply.eqQ) &&
         s.eq.bands.every((v, i) => v === eff.eq.bands[i]);
       if (same) return k;
     }
     return 'custom';
+  }
+  function hasQ(q) { return !!(Array.isArray(q) && q.some(v => v != null)); }
+  function sameQ(a, b) {
+    const norm = q => (hasQ(q) ? EQ_FREQS.map((_, i) => (q[i] == null ? null : q[i])) : null);
+    const x = norm(a), y = norm(b);
+    if (!x || !y) return !x && !y;
+    return x.every((v, i) => v === y[i]);
   }
   let ctx = null, built = false;
   const n = {};
@@ -707,7 +775,19 @@
     n.cfOut = ctx.createGain();
     /* 预设响度对齐：放在交叉馈送后、lookahead 限制器前，限制器看到的是补偿后的信号 */
     n.presetTrim = ctx.createGain(); n.presetTrim.gain.value = Math.pow(10, (Number(S.presetTrim) || 0) / 20);
-    n.out.connect(n.cfSplit);
+    /* ---- 动态压缩（打包版预设用）：单段压缩 + 补偿增益，干/湿两路增益切换。
+         压缩器节点即使设成不压缩也带着约 6ms 延迟，所以不能“关着也串在链路里”：
+         关闭时信号只走 compDry，和没加这个模块时完全一样 ---- */
+    n.compDry = ctx.createGain(); n.compDry.gain.value = 1;
+    n.compWet = ctx.createGain(); n.compWet.gain.value = 0;
+    n.comp = ctx.createDynamicsCompressor();
+    n.comp.threshold.value = 0; n.comp.knee.value = 0; n.comp.ratio.value = 1; // ratio=1 即不压缩
+    n.comp.attack.value = 0.004; n.comp.release.value = 0.22;
+    n.compMakeup = ctx.createGain(); n.compMakeup.gain.value = 1;
+    n.compJoin = ctx.createGain();
+    n.out.connect(n.compDry); n.compDry.connect(n.compJoin);
+    n.out.connect(n.comp); n.comp.connect(n.compMakeup); n.compMakeup.connect(n.compWet); n.compWet.connect(n.compJoin);
+    n.compJoin.connect(n.cfSplit);
     n.cfSplit.connect(n.cfL, 0); n.cfL.connect(n.cfShelfL); n.cfShelfL.connect(n.cfMerge, 0, 0);
     n.cfSplit.connect(n.cfR, 1); n.cfR.connect(n.cfShelfR); n.cfShelfR.connect(n.cfMerge, 0, 1);
     n.cfSplit.connect(n.cfDL, 0); n.cfDL.connect(n.cfLPL); n.cfLPL.connect(n.cfLR); n.cfLR.connect(n.cfMerge, 0, 1);
@@ -845,7 +925,9 @@
     n.eqB.forEach((b, i) => {
       const lim = BAND_CLAMP[i] == null ? 12 : BAND_CLAMP[i];
       const g = Math.max(-lim, Math.min(lim, S.eq.bands[i] || 0));
-      setP(b.gain, g); setP(b.Q, eqQ(g), 0.03);  // 比例Q：小增益Q低(宽而自然)，大增益Q高(精准)
+      // 预设自带 Q 值时用它（转换来的预设是固定 0.9），否则用比例 Q：小增益 Q 低（宽而自然），大增益 Q 高（精准）
+      const qOwn = Array.isArray(S.eq.q) ? S.eq.q[i] : null;
+      setP(b.gain, g); setP(b.Q, qOwn != null ? qOwn : eqQ(g), 0.03);
       if (g > maxBoost) maxBoost = g;
     });
     // 提升后自动回补（约 -0.5×最大提升 dB），避免整体变响顶到后级
@@ -996,6 +1078,16 @@
     // 限制器仅夜听模式串入（旁通态有+0.57dB makeup与抽吸尾，听成混响感）
     setP(n.limDry.gain, nightOn ? 0 : 1, 0.05);
     setP(n.limWet.gain, nightOn ? 1 : 0, 0.05);
+    /* 动态压缩（打包版预设）：参数沿用打包版——压缩比 4、阈值 -22dB、拐点 26dB，开启时补回约 1.5dB */
+    if (n.comp) {
+      const compOn = !!S.comp;
+      setP(n.compDry.gain, compOn ? 0 : 1, 0.05);
+      setP(n.compWet.gain, compOn ? 1 : 0, 0.05);
+      setP(n.comp.ratio, compOn ? 4 : 1, 0.1);
+      setP(n.comp.threshold, compOn ? -22 : 0, 0.1);
+      setP(n.comp.knee, compOn ? 26 : 0, 0.1);
+      setP(n.compMakeup.gain, compOn ? 1.18 : 1, 0.08);
+    }
     applyPitch();
   }
   function readCustomPresets() {
@@ -1246,6 +1338,12 @@
       applyAll(); save();
     },
     setEq(part) {
+      /* 手动拖了某一段滑杆：那一段回到比例 Q（预设自带的 Q 只对没动过的段继续生效） */
+      if (part && Array.isArray(part.bands) && Array.isArray(S.eq.q)) {
+        const q = S.eq.q.slice();
+        part.bands.forEach((v, i) => { if (v !== S.eq.bands[i]) q[i] = null; });
+        S.eq.q = hasQ(q) ? q : null;
+      }
       S.eq = Object.assign({}, S.eq, part);
       S.preset = detectPreset(S);
       applyAll(); save();
@@ -1331,11 +1429,13 @@
         const keep = { speed: S.speed, pitch: S.pitch, eq: S.eq };
         S = Object.assign(defaultState(), p.apply || {});
         S.preset = key; S.speed = keep.speed; S.pitch = keep.pitch;
-        // 预设EQ简写键映射进 S.eq（eqBass/eqTreble/eqBands）
+        // 预设EQ简写键映射进 S.eq（eqBass/eqTreble/eqBands；eqQ 是预设自带的逐段 Q 值）
         if (p.apply) {
           if (p.apply.eqBass !== undefined) S.eq.bass = p.apply.eqBass;
           if (p.apply.eqTreble !== undefined) S.eq.treble = p.apply.eqTreble;
           if (p.apply.eqBands) S.eq.bands = p.apply.eqBands.slice();
+          if (p.apply.eqQ) S.eq.q = p.apply.eqQ.slice();
+          delete S.eqQ; // 简写键映射完就不留在状态里
         } else S.eq = keep.eq;
       }
       applyAll(); save();
