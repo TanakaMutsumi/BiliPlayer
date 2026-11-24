@@ -23,15 +23,20 @@
       <a class="nav-item" data-action="nav" data-view="favfolders" data-icon="heart"></a>
       <a class="nav-item" data-action="nav" data-view="search" data-icon="search"></a>
       <a class="nav-item" data-action="nav" data-view="nowplaying" data-icon="film"></a>
+      <a class="nav-item" data-action="nav" data-view="qqmusic" data-icon="qq"></a>
+      <a class="nav-item" data-action="nav" data-view="nreco" data-icon="daily"></a>
+      <a class="nav-item" data-action="nav" data-view="recent" data-icon="clock"></a>
     </nav>
     <div class="side-sec">
       <div class="side-head"><span>我的歌单</span><span class="side-head-btns"><button class="mini-btn" data-action="viz-open" title="侧栏与播放页外观">🎨 外观</button><button class="mini-btn" data-action="pl-new">＋ 新建</button></span></div>
       <div id="pl-list"></div>
     </div>
     <div id="side-user-row">
+      <div id="qq-user"></div>
       <div id="ne-user"></div>
       <div id="side-user"></div>
     </div>
+    <div id="qq-actions"></div>
     <div id="ne-actions"></div>
   </aside>
 
@@ -78,6 +83,7 @@
     <button id="pb-desklyric" class="pb-btn" title="桌面歌词"></button>
     <button id="pb-heart" class="pb-btn" title="心动模式（开关）"></button>
     <button id="pb-roam" class="pb-btn" title="漫游（私人FM）"></button>
+    <button id="pb-fx" class="pb-btn" title="音效"></button>
     <button id="pb-vizset" class="pb-btn" title="播放页自定义"></button>
     <button id="pb-mode-audio" class="pb-btn pb-mode" title="纯听模式"></button>
     <button id="pb-mode-video" class="pb-btn pb-mode" title="看视频"></button>

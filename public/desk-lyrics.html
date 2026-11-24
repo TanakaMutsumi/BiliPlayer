@@ -53,6 +53,17 @@
      setIgnoreMouseEvents 的 forward 模式下页面收不到 mouseenter/leave，
      因此由主进程轮询鼠标坐标并对照页面热区来切换穿透，页面只负责上报热区矩形。 */
   const hasAPI = typeof window.widgetAPI !== 'undefined' && window.widgetAPI.setClickthrough;
+  /* kind 必须与主窗口里的键名完全一致，否则主窗口永远以为弹窗没开，点按钮就关不掉 */
+  const KIND = 'desk-lyrics';
+  /* 关闭自己：先告诉主窗口“已关闭”，再还原鼠标穿透，最后关窗。
+     window.close() 在无边框透明窗上偶发不响应，所以多一条 widget-close 通道兜底。
+     主窗口点按钮关闭时也会广播关闭指令过来，走同一个函数。 */
+  function closeSelf() {
+    try { bc.postMessage({ type: 'widget-closed', kind: KIND }); } catch (e) {}
+    try { if (hasAPI) window.widgetAPI.setClickthrough(false, []); } catch (e) {}
+    try { if (window.widgetAPI && window.widgetAPI.close) { window.widgetAPI.close(); return; } } catch (e) {}
+    try { window.close(); } catch (e) {}
+  }
   function rects() {
     const out = [];
     ['cur', 'next', 'tools'].forEach(id => {
@@ -71,6 +82,7 @@
   }
   bc.onmessage = e => {
     const m = e.data || {};
+    if (m.type === 'cmd' && m.cmd === 'close-' + KIND) { closeSelf(); return; }
     if (m.type !== 'state') return;
     const cur = m.line || '';
     const nxt = m.lineNext || '';
@@ -86,7 +98,7 @@
     }
   };
   bc.postMessage({ type: 'widget-ready', kind: 'desk-lyrics' });
-  $('close').onclick = () => { bc.postMessage({ type: 'widget-closed', kind: 'desk-lyrics' }); if (hasAPI) window.widgetAPI.setClickthrough(false, []); window.close(); };
+  $('close').onclick = closeSelf;
   window.addEventListener('beforeunload', () => bc.postMessage({ type: 'widget-closed', kind: 'desk-lyrics' }));
 })();
 </script>

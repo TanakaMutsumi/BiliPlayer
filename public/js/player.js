@@ -16,7 +16,7 @@ const Player = (function () {
     index: -1,
     mode: localStorage.getItem('bp.mode') || 'audio',
     slot: localStorage.getItem('bp.mode') === 'video' ? 'b' : 'a', // 当前主元素：a=audio b=video（无缝切换时互换）
-    playmode: localStorage.getItem('bp.playmode') || 'list', // list | one | random
+    playmode: (['list','one','random'].includes(localStorage.getItem('bp.playmode')) ? localStorage.getItem('bp.playmode') : 'list'), // list | one | random（白名单清洗：历史脏值直接重置）
     playing: false,
     loading: false,
     track: null,
@@ -31,6 +31,21 @@ const Player = (function () {
 
   function notify(extra) {
     if (hooks.onChange) hooks.onChange(S, extra || {});
+    /* 系统媒体面板（锁屏/媒体键）元数据同步 */
+    try {
+      if ('mediaSession' in navigator) {
+        const t = S.track || {};
+        const mt = s => String(s || '').replace(/<[^>]*>/g, '');
+        const picAbs = t.pic ? (String(t.pic).startsWith('//') ? 'https:' + t.pic : t.pic) : '';
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: mt(t.title || t.name || '未在播放'),
+          artist: mt(t.up || t.artist || ''),
+          album: '哔哩播放器',
+          artwork: picAbs ? [{ src: picAbs, sizes: '512x512', type: 'image/jpeg' }] : []
+        });
+        navigator.mediaSession.playbackState = S.playing ? 'playing' : 'paused';
+      }
+    } catch (e) { }
   }
   function neQualityLabel(m) {
     if (m && m.quality) return m.quality;
@@ -428,9 +443,10 @@ const Player = (function () {
   function prefetchNext() {
     try {
       const it = S.queue && S.queue[S.index + 1];
-      if (!it || !(it.bvid || it.nid)) return;
+      if (!it || !(it.bvid || it.nid || it.qmid)) return;
       if (S.mode === 'video' && dashVideoOn()) return; // DASH 双流不走 mp4 预取
       if (it.nid) { neMedia(it.nid, audioQuality()).catch(() => {}); return; }
+      if (it.qmid) { qqMedia(it).catch(() => {}); return; } // 结果进 qqPre，150 秒内切到这首歌可直接用
       const key = 'b' + it.bvid;
       const hit = prefetchMap.get(key);
       if (hit && Date.now() - hit.at < 10 * 60 * 1000) return;
@@ -441,6 +457,50 @@ const Player = (function () {
       }).catch(() => {});
     } catch (e) {}
   }
+
+  /* ---------- QQ音乐直链（打包版） ----------
+     vkey 直链只有几分钟有效期，所以不进 prefetchMap，单独缓存、150 秒内复用；
+     音质偏好 bp.qqQual：auto（按账号权限取最高可用）/ 320 / 128 */
+  const qqPre = new Map();
+  const QQ_PRE_TTL = 150000;
+  function qqPrefKey(it) { return 'q' + it.qmid + '|' + (it.qmMediaMid || it.mediaMid || ''); }
+  async function qqMedia(it) {
+    const m = await Api.get('qqmedia', {
+      id: it.qmid, mm: it.qmMediaMid || it.mediaMid || '',
+      pref: localStorage.getItem('bp.qqQual') || 'auto'
+    });
+    if (m && m.url) {
+      qqPre.set(qqPrefKey(it), { url: m.url, type: m.type || 'mp3', at: Date.now() });
+      if (qqPre.size > 8) qqPre.delete(qqPre.keys().next().value);
+    }
+    return m;
+  }
+
+  /* 最后成功播放的曲目：加载失败时界面回滚到它，避免“封面已是新歌、声音还是旧歌”的错位 */
+  let _lastGoodTrack = null, _lastGoodQuality = '';
+
+  /* ---------- QQ音乐听歌时长上报（让账号记上最近播放/时长） ----------
+     timeupdate 里按真实播放时间累计（seek跳变不计），换歌/自然播完时上报一次 */
+  let _qScrob = { mid: '', sec: 0, lastT: 0 };
+  function qqScrobTick() {
+    const t = S.track;
+    const el = activeEl();
+    if (!t || !t.qmid || !el.src) { _qScrob.mid = ''; return; }
+    if (_qScrob.mid !== t.qmid) _qScrob = { mid: t.qmid, sec: 0, lastT: el.currentTime || 0 };
+    if (el.paused) { _qScrob.lastT = el.currentTime || 0; return; }
+    const cur = el.currentTime || 0;
+    let d = cur - _qScrob.lastT;
+    if (d < 0 || d > 3) d = 0; // seek/加载跳变不计入时长
+    _qScrob.sec += d;
+    _qScrob.lastT = cur;
+  }
+  function qqScrobFlush() {
+    if (!_qScrob.mid || _qScrob.sec < 10) { _qScrob = { mid: '', sec: 0, lastT: 0 }; return; }
+    const mid = _qScrob.mid, sec = Math.round(Math.min(_qScrob.sec, 1800));
+    _qScrob = { mid: '', sec: 0, lastT: 0 };
+    Api.get('qqreport', { mid, sec }).catch(() => { });
+  }
+
   /* 自动档卡顿降档：仅 auto 档生效；连续 waiting 6 秒才降一档，手动选的档位不动 */
   function clearStallTimer(el) {
     if (el && el._qStallTimer) { clearTimeout(el._qStallTimer); el._qStallTimer = 0; }
@@ -512,6 +572,8 @@ const Player = (function () {
   async function load(item, { seek = 0, autoplay = true, qualityOverride = null, autoDowngrade = null, dashFallback = false } = {}) {
     const gen = ++loadGen;
     preAdvanced = false;
+    /* 换歌先把上一首的已听时长报给QQ音乐（≥10秒才值得报） */
+    if (_qScrob.mid && (!item.qmid || item.qmid !== _qScrob.mid)) qqScrobFlush();
     S.loading = true;
     S._dashEnded = false;
     try {
@@ -562,10 +624,68 @@ const Player = (function () {
           fadeGain(vol(), 220);
         }
         S.loading = false;
+        _lastGoodTrack = S.track;
+        _lastGoodQuality = S.quality;
+        notify({ loaded: true });
+        return;
+      }
+      if (item.qmid) {
+        // QQ音乐直链歌曲：无bvid/cid，直链由服务端带登录Cookie解析（游客可能限流）
+        /* 预解析命中：上一首播放期间已解析好下一首直链 → 切歌零等待 */
+        let mQ;
+        const preQ = qqPre.get(qqPrefKey(item));
+        if (preQ && Date.now() - preQ.at < QQ_PRE_TTL) {
+          mQ = { url: preQ.url, type: preQ.type || 'mp3' };
+          qqPre.delete(qqPrefKey(item));
+        } else {
+          try { mQ = await qqMedia(item); } catch (e2) { mQ = { url: null }; }
+        }
+        if (gen !== loadGen) return; // 取直链期间用户已切到别的歌
+        /* 没有明确原因的失败再试一次；登录过期、无版权、付费这些重试也没用 */
+        if (!mQ.url && !mQ.needLogin && !mQ.noLicense && !mQ.paidSong && !mQ.needbuy) {
+          try { mQ = (await qqMedia(item)) || mQ; } catch (e2) { }
+          if (gen !== loadGen) return;
+        }
+        if (!mQ.url) {
+          if (mQ.needLogin) {
+            /* 登录态过期 ≠ 没会员：给出可操作的提示（顶层会弹重新登录） */
+            if (window.__qqNeedLogin) { try { window.__qqNeedLogin(); } catch (e) { } }
+            throw new Error('QQ音乐登录已过期，请重新登录QQ音乐（不是会员问题）');
+          }
+          if (mQ.noLicense) throw new Error('这首歌在QQ音乐没有可用音源（可能已下架或无版权）');
+          if (mQ.paidSong) throw new Error('这是付费歌曲（数字专辑），本账号暂无播放权限');
+          if (mQ.needbuy) throw new Error('这首歌需要QQ音乐豪华VIP（普通绿钻不含此音质）');
+          throw new Error('QQ音乐直链获取失败(code=' + (mQ.code || '?') + ')，请重试或切换歌曲');
+        }
+        const elQ = activeEl();
+        const otherQ = otherEl();
+        // 与B站/网易云路径一致：先把正在唱的旧歌淡出、停掉闲置元素，再换源（否则旧歌会继续响）
+        const singingQ = [elQ, otherQ].find(x => !x.paused && !x.ended && isFinite(x.duration) && x.currentTime < x.duration - 0.25 && x.src);
+        if (singingQ) await fadeGain(0, 180);
+        if (gen !== loadGen) { fadeGain(vol(), 80); return; }
+        try { otherQ.pause(); } catch {}
+        elQ.src = '/api/stream?u=' + encodeURIComponent(mQ.url);
+        try { elQ.currentTime = seek || 0; } catch (e) {}
+        applyRate(elQ);
+        S.quality = 'QQ音乐 ' + (mQ.type || 'mp3');
+        ensureAnalyser();
+        normalizeElGains(elQ);
+        initLoud(elQ, item);
+        resumeAudio();
+        if (autoplay) {
+          try { await elQ.play(); }
+          catch (e) { if (!(e && (e.name === 'AbortError' || e.name === 'NotAllowedError'))) throw e; }
+          if (gen !== loadGen) return;
+          fadeGain(vol(), 220);
+        }
+        S.loading = false;
+        _lastGoodTrack = S.track;
+        _lastGoodQuality = S.quality;
         notify({ loaded: true });
         prefetchNext();
         return;
       }
+      if (!item.bvid) throw new Error('这首歌曲缺少播放信息（来源字段丢失），请刷新列表后重试'); // 映射丢字段时的清晰报错，替代费解的上游错误
       item = await ensureCid(item);
       if (gen !== loadGen) return;
       const wantDash = S.mode === 'video' && dashVideoOn() && !dashFallback;
@@ -615,15 +735,23 @@ const Player = (function () {
         fadeGain(vol(), 220); // 新歌淡入，不阻塞加载完成的通知
       }
       S.loading = false;
+      _lastGoodTrack = S.track; // 记录成功播放的曲目（失败回滚用）
       notify({ loaded: true });
       prefetchNext();
     } catch (e) {
       if (gen !== loadGen) return; // 旧加载的失败不影响新歌
       S.loading = false;
       S.playing = false;
+      /* 加载失败（如VIP/下架）：立刻暂停旧音频并回滚界面到上一首成功播放的歌，
+         避免"封面已是新歌、声音还是旧歌"的错位 */
+      try { audio.pause(); video.pause(); } catch (e2) { }
+      if (_lastGoodTrack && S.track !== _lastGoodTrack) {
+        S.track = _lastGoodTrack;
+        S.quality = _lastGoodQuality || '';
+      }
       // 淡出后失败要把音量拉回来，不然一直静音
       fadeGain(vol(), 60);
-      notify({ error: e });
+      notify({ error: e, rolledBack: true, failedTitle: String(item.title || item.name || '').replace(/<em[^>]*>/g, '').replace(/<\/em>/g, '') });
       throw e;
     }
   }
@@ -731,6 +859,8 @@ const Player = (function () {
       eqTo.gain.linearRampToValueAtTime(0, t2 + fadeMs / 1000);
     }
     S.track = item;
+    _lastGoodTrack = S.track;
+    _lastGoodQuality = S.quality;
     S.loading = false;
     initLoud(to, item); // 目标元素按新歌初始化响度测量
     notify({ loaded: true });
@@ -801,6 +931,8 @@ const Player = (function () {
     to.volume = 0;
     try { await to.play(); } catch (e) {}
     S.track = item;
+    _lastGoodTrack = S.track;
+    _lastGoodQuality = S.quality;
     S.loading = false;
     initLoud(to, item);
     notify({ loaded: true });
@@ -858,8 +990,12 @@ const Player = (function () {
     const it = cur();
     if (!it) return;
     S.track = it;
-    const seek = S.resumeAt || 0; // 断点续播：首次播放跳到上次进度
+    /* 断点续播仅对"保存会话时的那一首歌"生效：
+       点其他歌必须从头播（否则启动恢复的旧进度会错误套到新歌上） */
+    const tkey = it.bvid || (it.nid ? 'n' + it.nid : it.qmid ? 'q' + it.qmid : '');
+    const seek = (S.resumeKey && S.resumeKey === tkey) ? (S.resumeAt || 0) : 0;
     S.resumeAt = 0;
+    S.resumeKey = '';
     await load(it, { seek });
   }
 
@@ -876,7 +1012,14 @@ const Player = (function () {
     if (el.paused) { el.play().catch(() => {}); } else { el.pause(); }
   }
 
-  async function step(delta) {
+  /* 切歌串行化：快速连点next排队执行，绝不并发互踩 */
+  let _stepChain = Promise.resolve();
+  function step(delta) {
+    const p = _stepChain.then(() => _stepOnce(delta));
+    _stepChain = p.catch(() => { });
+    return p;
+  }
+  async function _stepOnce(delta) {
     if (!S.queue.length) return;
     const i = nextIndexOf(delta);
     if (i < 0) return;
@@ -983,7 +1126,9 @@ const Player = (function () {
     } catch (e) { /* notify 已处理 */ }
   }
 
+  const PLAYMODES = ['list', 'one', 'random']; // 合法播放模式白名单：诊断工具/旧版本可能写入过非法值（如'order'），导致图标undefined+模式判断全部失效
   function setPlaymode(pm) {
+    if (!PLAYMODES.includes(pm)) pm = 'list';
     S.playmode = pm;
     localStorage.setItem('bp.playmode', pm);
     notify();
@@ -1026,10 +1171,11 @@ const Player = (function () {
       if (S.dashAV && S._dashEnded) return;
       if (S.dashAV) S._dashEnded = true;
       if (preAdvanced) return; // 已提前交叉到下一首，等 swap 完成，别二次切歌
+      qqScrobFlush(); // 自然播完：先结算时长再切下一首
       if (S.playmode === 'one') { el.currentTime = 0; el.play().catch(() => {}); }
       else step(1).catch(() => {});
     });
-    el.addEventListener('timeupdate', () => { clearStallTimer(el); if (el !== activeEl()) return; audioWatch(); preAdvance(el); notify({ tick: true }); });
+    el.addEventListener('timeupdate', () => { clearStallTimer(el); if (el !== activeEl()) return; audioWatch(); qqScrobTick(); preAdvance(el); notify({ tick: true }); });
     el.addEventListener('waiting', () => { if (el !== activeEl()) return; S.loading = true; armStallTimer(el); notify(); });
     el.addEventListener('playing', () => { if (el !== activeEl()) return; clearStallTimer(el); S.loading = false; notify(); });
     el.addEventListener('error', () => {
@@ -1051,6 +1197,20 @@ const Player = (function () {
       notify({ error: new Error('媒体加载失败') });
     });
   });
+
+  /* ---------- 系统媒体键（锁屏/键盘多媒体键，打包版） ---------- */
+  if ('mediaSession' in navigator) {
+    try {
+      navigator.mediaSession.setActionHandler('play', () => { if (!S.playing && S.track) toggle(); });
+      navigator.mediaSession.setActionHandler('pause', () => { if (S.playing) toggle(); });
+      navigator.mediaSession.setActionHandler('previoustrack', () => { if (S.queue.length) step(-1); });
+      navigator.mediaSession.setActionHandler('nexttrack', () => { if (S.queue.length) step(1); });
+      /* 锁屏/媒体键快进快退（±10秒）与精确定位 */
+      navigator.mediaSession.setActionHandler('seekto', d => { if (d && d.seekTime != null) seek(d.seekTime); });
+      navigator.mediaSession.setActionHandler('seekbackward', d => { const e2 = activeEl(); if (e2 && isFinite(e2.duration)) seek(Math.max(0, e2.currentTime - (d && d.seekOffset || 10))); });
+      navigator.mediaSession.setActionHandler('seekforward', d => { const e2 = activeEl(); if (e2 && isFinite(e2.duration)) seek(Math.min(e2.duration, e2.currentTime + (d && d.seekOffset || 10))); });
+    } catch (e) { }
+  }
 
   return { S, audio, video, hooks, cur, activeEl, otherEl, setQueue, insertAfterCurrent, playCurrent, toggle, step, seek, setVolume, volume, fadeMs: () => fadePref, setFadeMs, loudTarget: () => loudTarget, setLoudTarget, loudPeakCeil: () => loudPeakCeil, setLoudPeakCeil, setMode, setPlaymode, mountVideo, unmountVideo, getSpectrum: spectrum, resumeAudio, audioState: () => (audioCtx ? audioCtx.state : 'none'), applyUserSpeed: () => { try { if (S.dashAV) { applyRate(audio); applyRate(video); } else { const el = activeEl(); if (el && el.src) applyRate(el); } } catch (e) {} }, crossfadeTo, crossfadeToBuffer, ensureCid, pickMedia: pickPlayableMedia, neMedia, eqState: () => ({ a: eqA ? eqA.gain.value : null, b: eqB ? eqB.gain.value : null }), audioDebug: () => ({ ctx: audioCtx ? audioCtx.state : 'none', sampleRate: audioCtx ? audioCtx.sampleRate : null, baseLatency: audioCtx && audioCtx.baseLatency != null ? +audioCtx.baseLatency.toFixed(4) : null, outputLatency: audioCtx && audioCtx.outputLatency != null ? +audioCtx.outputLatency.toFixed(4) : null, activeLoud: activeEl()._loud ? { key: activeEl()._loud.key, gDb: +activeEl()._loud.gDb.toFixed(2), locked: activeEl()._loud.locked, peak: +(activeEl()._loud.peak || 0).toFixed(3), peakCapDb: +capDbByPeak(99, activeEl()._loud.peak || 0).toFixed(2), lufs: activeEl()._loud.lufs != null ? +activeEl()._loud.lufs.toFixed(2) : null, target: loudTarget, peakCeil: loudPeakCeil, fadeMs: fadePref } : null, master: gainNode ? gainNode.gain.value : null, eqA: eqA ? eqA.gain.value : null, eqB: eqB ? eqB.gain.value : null, ga: gainA ? gainA.gain.value : null, gb: gainB ? gainB.gain.value : null, normA: normA ? +normA.gain.value.toFixed(3) : null, normB: normB ? +normB.gain.value.toFixed(3) : null, loudA: audio._loud ? { key: audio._loud.key, gDb: +audio._loud.gDb.toFixed(2), locked: audio._loud.locked } : null, loudB: video._loud ? { key: video._loud.key, gDb: +video._loud.gDb.toFixed(2), locked: video._loud.locked } : null }) };
 })();

@@ -42,6 +42,7 @@ a { color: var(--blue); text-decoration: none; }
 
 /* ---- 侧栏 ---- */
 #sidebar {
+  overscroll-behavior: contain;
   width: 228px; flex: none;
   background: var(--card);
   border-right: 1px solid var(--line);
@@ -156,12 +157,13 @@ body.np-fullbg .np-stage .np-bg { display: none; } /* 同一张图改由全窗�
 .sb-opt.active { border-color: var(--pink); color: var(--pink); background: var(--pink-l); font-weight: 600; }
 .sb-opt.sb-color { position: relative; overflow: hidden; }
 .sb-opt.sb-color input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-.logo { display: flex; align-items: center; gap: 9px; padding: 2px 8px 14px; }
+.logo { contain: layout; display: flex; align-items: center; gap: 9px; padding: 2px 8px 14px; } /* contain: layout 来自打包版 */
 .logo-icon { width: 34px; height: 34px; }
 .logo-txt b { font-size: 16px; display: block; line-height: 1.2; }
 .logo-txt span { font-size: 11px; color: var(--t3); }
 #nav { display: flex; flex-direction: column; gap: 2px; }
 .nav-item {
+  will-change: background;
   display: flex; align-items: center; gap: 10px;
   padding: 9px 12px; border-radius: 8px;
   color: var(--t2); font-size: 14px; cursor: pointer;
@@ -169,9 +171,15 @@ body.np-fullbg .np-stage .np-bg { display: none; } /* 同一张图改由全窗�
 }
 .nav-item svg { width: 19px; height: 19px; flex: none; }
 .nav-item:hover { background: #f1f2f3; color: var(--t1); }
-.nav-item.active { background: var(--pink-l); color: var(--pink); font-weight: 600; }
+.nav-item.active {
+  position: relative;
+  overflow: hidden;
+  border-left: 2.5px solid var(--pink);
+  padding-left: 10px; background: var(--pink-l); color: var(--pink); font-weight: 600; }
 
-.side-sec { flex: 1; overflow-y: auto; margin-top: 14px; min-height: 0; }
+.side-sec {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable; flex: 1; overflow-y: auto; margin-top: 14px; min-height: 0; }
 .side-head {
   display: flex; justify-content: space-between; align-items: center;
   padding: 0 10px 6px; color: var(--t3); font-size: 12px;
@@ -220,7 +228,8 @@ body.np-fullbg .np-stage .np-bg { display: none; } /* 同一张图改由全窗�
 .btn-login:hover { background: var(--pink-d); }
 
 /* ---- 主区域 ---- */
-#main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+#main {
+  overscroll-behavior: contain; flex: 1; display: flex; flex-direction: column; min-width: 0; }
 #topbar {
   height: 58px; flex: none;
   display: flex; align-items: center; gap: 16px;
@@ -239,6 +248,7 @@ body.np-fullbg .np-stage .np-bg { display: none; } /* 同一张图改由全窗�
 #crumb .crumb-sub { color: var(--t3); font-weight: 400; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 320px; }
 
 .searchbox {
+  contain: layout;
   flex: 1; max-width: 460px; margin: 0 auto;
   display: flex; align-items: center;
   background: #fff; border: 1.5px solid var(--line);
@@ -247,7 +257,8 @@ body.np-fullbg .np-stage .np-bg { display: none; } /* 同一张图改由全窗�
 }
 .searchbox:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0, 174, 236, .12); }
 .sb-ico { width: 16px; height: 16px; color: var(--t3); flex: none; }
-.searchbox input { flex: 1; border: none; background: none; padding: 6px 10px; font-size: 13px; color: var(--t1); }
+.searchbox input {
+  transition: border-color .2s, box-shadow .2s; flex: 1; border: none; background: none; padding: 6px 10px; font-size: 13px; color: var(--t1); }
 .searchbox button {
   flex: none; background: var(--blue); color: #fff;
   font-size: 13px; padding: 5px 16px; border-radius: 18px;
@@ -271,6 +282,7 @@ body.np-fullbg .np-stage .np-bg { display: none; } /* 同一张图改由全窗�
 .toolbar .sp { flex: 1; }
 
 .btn {
+  will-change: background, border-color;
   display: inline-flex; align-items: center; gap: 6px;
   padding: 7px 16px; border-radius: 8px; font-size: 13px;
   border: 1px solid var(--line); background: #fff; color: var(--t2);
@@ -282,7 +294,8 @@ body.np-fullbg .np-stage .np-bg { display: none; } /* 同一张图改由全窗�
 .btn.primary:hover { background: var(--pink-d); }
 .btn.blue { background: var(--blue); border-color: var(--blue); color: #fff; font-weight: 600; }
 .btn.blue:hover { background: #009ccf; }
-.btn.ghost { border-color: transparent; background: transparent; }
+.btn.ghost {
+  opacity: .7; border-color: transparent; background: transparent; }
 .btn.ghost:hover { background: #ececed; color: var(--t1); border-color: transparent; }
 .btn.danger:hover { border-color: #f25d5d; color: #f25d5d; background: #fef1f1; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
@@ -398,6 +411,24 @@ body.np-fullbg .np-stage .np-bg { display: none; } /* 同一张图改由全窗�
 .prow:hover .p-del { opacity: 1; }
 .prow .p-del:hover { color: #f25d5d; background: #fee; }
 .prow .p-del svg { width: 15px; height: 15px; }
+/* QQ 歌单加载中（大歌单要拉多页，别让用户以为空了） */
+.qq-loading {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 90px 20px; color: var(--t2);
+}
+.qq-loading p { font-size: 14.5px; color: var(--t1); }
+.qq-loading span { font-size: 12.5px; color: var(--t3); }
+
+/* 单首“加入歌单”按钮（QQ音乐歌单详情等） */
+.prow .p-add {
+  flex: none; width: 28px; height: 28px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--t3); opacity: .5;
+  transition: opacity .12s, color .12s, background .12s;
+}
+.prow:hover .p-add { opacity: 1; }
+.prow .p-add:hover { color: var(--pink); background: var(--pink-l); }
+.prow .p-add svg { width: 15px; height: 15px; }
 .prow.dragging { opacity: .4; }
 .prow.dragover { box-shadow: inset 0 2px 0 var(--pink); }
 
@@ -415,10 +446,23 @@ body.np-fullbg .np-stage .np-bg { display: none; } /* 同一张图改由全窗�
 .np-left { flex: 1; min-width: 0; }
 .np-video-wrap {
   position: relative;
-  background: #000; border-radius: 14px; overflow: hidden;
+  background: #000; overflow: hidden;
   aspect-ratio: 16/9; max-height: 66vh;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, .18);
+  /* 以下来自打包版（封面主题色光晕）。打包版自己的样式表里，上面这几行基础布局属性掉在了选择器外面，
+     被浏览器丢弃，这里按原意归位。 */
+  contain: strict;
+  box-shadow:
+    0 8px 34px color-mix(in srgb, var(--np-accent, var(--viz)) 30%, transparent),
+    0 2px 12px rgba(0, 0, 0, .3);
+  border-radius: 10px;
+  transition: box-shadow .6s ease;
+}
+.np-stage.is-playing ~ * .np-video-wrap,
+body.np-fs .np-video-wrap {
+  box-shadow:
+    0 10px 44px color-mix(in srgb, var(--np-accent, var(--viz)) 45%, transparent),
+    0 2px 12px rgba(0, 0, 0, .35);
 }
 /* 视频控制层（悬停显示，全屏时自动隐藏） */
 .np-ovl {
@@ -487,7 +531,10 @@ body.np-fullbg .np-stage .np-bg { display: none; } /* 同一张图改由全窗�
 
 /* ---- 纯听模式：沉浸式黑胶播放页 ---- */
 .np-audio { align-items: stretch; }
-.np-audio .np-stage { flex: 1; min-width: 0; }
+.np-audio .np-stage {
+  min-height: min(480px, calc(100vh - 100px));
+  contain: layout;
+  contain: layout style; flex: 1; min-width: 0; }
 .np-stage {
   position: relative; overflow: hidden;
   display: flex; gap: 36px; align-items: center;
@@ -501,11 +548,20 @@ body.np-fullbg .np-stage .np-bg { display: none; } /* 同一张图改由全窗�
   box-shadow: 0 8px 32px rgba(0, 0, 0, .25);
 }
 .np-bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+.np-stage::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(58% 46% at 24% 36%, color-mix(in srgb, var(--np-accent, var(--viz)) 30%, transparent), transparent 72%);
+  opacity: 0; transition: opacity .9s ease;
+}
+.np-stage.is-playing::after { opacity: 1; animation: stagebreath 5.5s ease-in-out infinite; }
+@keyframes stagebreath { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
 .np-bg-img {
   width: 100%; height: 100%; object-fit: cover;
   transform: scale(1.18);
   filter: blur(var(--np-blur, 24px)) saturate(1.15) brightness(.8);
+  opacity: 0; transition: opacity .9s ease;
 }
+.np-bg-img.on { opacity: 1; }
 .np-bg-shade {
   position: absolute; inset: 0;
   background: linear-gradient(160deg,
@@ -514,10 +570,14 @@ body.np-fullbg .np-stage .np-bg { display: none; } /* 同一张图改由全窗�
     rgba(10, 8, 14, .62) 100%);
 }
 .stage-viz {
-  position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 42%;
+  contain: strict;
+  will-change: transform;
+  /* 只占底部一条窄带（最多 190px），避免压到歌词区 */
+  position: absolute; left: 0; right: 0; bottom: 0; width: 100%;
+  height: min(22%, 190px);
   pointer-events: none; z-index: 0; opacity: .8;
-  mask-image: linear-gradient(transparent 0, #000 40%);
-  -webkit-mask-image: linear-gradient(transparent 0, #000 40%);
+  mask-image: linear-gradient(transparent 0, rgba(0, 0, 0, .45) 42%, #000 82%);
+  -webkit-mask-image: linear-gradient(transparent 0, rgba(0, 0, 0, .45) 42%, #000 82%);
 }
 .np-vinyl-wrap, .np-trackinfo { z-index: 1; }
 .np-vinyl-wrap {
@@ -527,16 +587,55 @@ body.np-fullbg .np-stage .np-bg { display: none; } /* 同一张图改由全窗�
 }
 .np-vinyl {
   position: relative; width: min(300px, 100%); aspect-ratio: 1; border-radius: 50%;
+  /* 彩胶：盘体染色随 --np-accent（封面取色）变化，中央保留黑胶轴心 */
   background:
-    radial-gradient(circle at 50% 50%, #191920 0 17%, #232329 17% 18.5%, #141419 18.5% 100%);
+    /* 斜向掠光带（随盘旋转=灯光扫过胶面） */
+    conic-gradient(from 20deg at 50% 50%, transparent 0 9%, rgba(255, 255, 255, .13) 17%, transparent 26% 44%, rgba(255, 255, 255, .08) 54%, transparent 63% 84%, rgba(255, 255, 255, .06) 93%, transparent 100%),
+    /* 彩虹干涉色（真实黑胶的光干涉效果） */
+    conic-gradient(from 90deg, rgba(255, 150, 190, .09), rgba(140, 210, 255, .09) 25%, rgba(190, 255, 150, .08) 50%, rgba(255, 220, 140, .09) 75%, rgba(255, 150, 190, .09)),
+    /* 密集音轨细纹 */
+    repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, .07) 0 1.1px, transparent 1.1px 4px),
+    /* 音轨分隔暗环（每首歌之间的间隔） */
+    repeating-radial-gradient(circle at 50% 50%, rgba(0, 0, 0, .38) 0 3.5px, transparent 3.5px 7.5%),
+    /* 内圈过渡阴影 */
+    radial-gradient(circle at 50% 50%, transparent 0 30%, rgba(0, 0, 0, .22) 40%, transparent 52%),
+    /* 基色（封面取色） */
+    radial-gradient(circle at 50% 50%,
+      color-mix(in srgb, var(--np-accent, var(--viz)) 34%, #17171d) 0%,
+      color-mix(in srgb, var(--np-accent, var(--viz)) 15%, #121217) 52%,
+      #0e0e13 100%);
   box-shadow: 0 14px 44px rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(255, 255, 255, .05);
   animation: vinyl-spin 9s linear infinite;
   animation-play-state: paused;
+  transition: background .8s ease;
 }
-.np-stage.is-playing .np-vinyl { animation-play-state: running; }
+.np-stage.is-playing .np-vinyl {
+  animation: vinyl-spin 9s linear infinite, vinylbreath 4.2s ease-in-out infinite;
+}
+@keyframes vinylbreath {
+  0%, 100% { box-shadow: 0 14px 44px rgba(0, 0, 0, .55), 0 0 46px -10px color-mix(in srgb, var(--np-accent, var(--viz)) 45%, transparent); }
+  50% { box-shadow: 0 14px 48px rgba(0, 0, 0, .58), 0 0 82px -6px color-mix(in srgb, var(--np-accent, var(--viz)) 72%, transparent); }
+}
 .np-vinyl::before {
-  content: ''; position: absolute; inset: 5%; border-radius: 50%;
-  background: repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, .05) 0 1px, transparent 1px 5px);
+  content: ''; position: absolute; inset: 3%; border-radius: 50%; pointer-events: none;
+  background:
+    repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, .055) 0 1px, transparent 1px 3.2px),
+    repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, .028) 0 2px, transparent 2px 13px),
+    repeating-radial-gradient(circle at 50% 50%, rgba(0, 0, 0, .22) 0 1.5px, transparent 1.5px 7px);
+}
+.np-vinyl::after {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 3.2%; height: 3.2%;
+  transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, .55), rgba(255, 255, 255, .05) 70%);
+  z-index: 3; opacity: .55; transition: opacity .5s;
+}
+.np-stage.is-playing .np-vinyl::after { opacity: 1; }
+.np-vinyl .vp-sheen {
+  position: absolute; inset: 0; border-radius: 50%; pointer-events: none; z-index: 2;
+  background:
+    conic-gradient(from 215deg, transparent 0 54%, rgba(255, 255, 255, .06) 68%, rgba(255, 255, 255, .17) 78%, rgba(255, 255, 255, .04) 86%, transparent 94%),
+    radial-gradient(120% 70% at 30% 18%, rgba(255, 255, 255, .09) 0%, transparent 46%);
+  mix-blend-mode: screen;
 }
 .np-vinyl .vp-cover {
   position: absolute; inset: 27%; border-radius: 50%; overflow: hidden;
@@ -548,14 +647,18 @@ body.np-fullbg .np-stage .np-bg { display: none; } /* 同一张图改由全窗�
   position: absolute; top: -4%; right: 0; width: 36%; z-index: 2;
   transform-origin: 20% 13%;
   transform: rotate(-24deg);
-  transition: transform .5s ease;
+  transition: transform .6s linear;
   filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .45));
 }
-.np-stage.is-playing .np-tonearm { transform: rotate(2deg); }
 .np-trackinfo { flex: 1; min-width: 0; display: flex; flex-direction: column; max-height: 100%; min-height: 0; }
-.nt-title { font-size: 22px; font-weight: 700; line-height: 1.4; }
+.nt-title {
+  text-shadow: 0 2px 18px rgba(0,0,0,.4), 0 0 40px rgba(0,0,0,.2); font-size: 22px; font-weight: 700; line-height: 1.4; }
 .nt-sub { margin-top: 10px; display: flex; gap: 12px; align-items: center; color: rgba(255, 255, 255, .68); font-size: 13px; flex-wrap: wrap; }
-.nt-sub .badge { background: rgba(255, 255, 255, .15); }
+.nt-sub .badge {
+  transition: background .2s, color .2s;
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-weight: 600; background: rgba(255, 255, 255, .15); }
 .nt-tabs { margin-top: 20px; display: flex; gap: 8px; }
 .nt-tab {
   padding: 4px 15px; border-radius: 14px; font-size: 12.5px;
@@ -774,6 +877,7 @@ body.np-fullbg .np-stage .np-bg { display: none; } /* 同一张图改由全窗�
 
 /* ---- 弹幕层（云合唱） ---- */
 .dm-layer {
+  pointer-events: none;
   position: absolute; inset: 0; width: 100%; height: 100%;
   pointer-events: none; z-index: 6;
 }
@@ -783,6 +887,8 @@ body.np-fullbg .np-stage .np-bg { display: none; } /* 同一张图改由全窗�
 }
 #pb-track { position: relative; }
 .ver-n {
+  font-weight: 700;
+  font-style: normal;
   font-style: normal; margin-left: 6px; display: none;
   background: var(--viz); color: #fff; border-radius: 9px;
   font-size: 10.5px; padding: 1px 6px; font-weight: 700;
@@ -855,7 +961,8 @@ body.np-fullbg .np-stage .np-bg { display: none; } /* 同一张图改由全窗�
 .nt-src { margin-top: 12px; font-size: 11.5px; color: rgba(255, 255, 255, .38); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nt-actions { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
 .nt-actions .btn { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .28); color: #fff; }
-.nt-actions .btn:hover { background: rgba(255, 255, 255, .2); border-color: #fff; color: #fff; }
+.nt-actions .btn:hover {
+  transform: translateY(-1px); background: rgba(255, 255, 255, .2); border-color: #fff; color: #fff; }
 .nt-actions .btn.primary { background: var(--viz); border-color: var(--viz); }
 .nt-actions .btn.primary:hover { background: var(--viz); border-color: var(--viz); filter: brightness(1.1); color: #fff; }
 
@@ -916,13 +1023,17 @@ body.immersive .sb-ico { color: rgba(255, 255, 255, .5); }
 body.immersive .searchbox button { background: var(--viz); }
 body.immersive .searchbox button:hover { filter: brightness(1.12); background: var(--viz); }
 body.immersive #view {
-  background: #141019;
+  /* 底色必须与 .np-stage.light 的浅色渐变一致：view-fade 每次重渲染都会
+     从透明播放入场动画，若这里是深色(#141019)，播放页每次重渲染（歌词加载/
+     切tab/切歌）都会闪一下黑 —— 「闪黑」的元凶就是它 */
+  background: #f2f0f6;
   padding: 0; overflow: hidden; display: flex; flex-direction: column;
   transition: padding-bottom .28s ease;
 }
 /* 底栏显示时给播放页让位（否则 nt-actions 被压在底栏下面）；收起后让位缩小 */
 body.pb-on.immersive #view { padding-bottom: 88px; }
 body.pb-on.immersive.pb-collapsed #view { padding-bottom: 18px; }
+body.dark.immersive #view { background: #141019; } /* 深色主题保持深底：黑上黑不可见 */
 body.immersive .view-fade { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 body.immersive .np-audio { flex: 1; min-height: 0; align-items: stretch; }
 body.immersive .np-stage { flex: 1; align-self: stretch; height: auto; min-height: 0; border-radius: 0; box-shadow: none; }
@@ -930,19 +1041,26 @@ body.immersive .np-stage { flex: 1; align-self: stretch; height: auto; min-heigh
   display: flex; align-items: center; gap: 9px;
   padding: 7px 12px; cursor: pointer; font-size: 12.5px;
 }
-.qrow:hover { background: #f7f8fa; }
+.qrow:hover {
+  background: rgba(255,255,255,.06); background: #f7f8fa; }
 .qrow.playing { background: var(--pink-l); }
 .qrow .q-idx { width: 20px; text-align: center; color: var(--t3); flex: none; font-variant-numeric: tabular-nums; }
 .qrow.playing .q-idx { color: var(--pink); font-weight: 700; }
 .qrow img { width: 44px; height: 28px; border-radius: 4px; object-fit: cover; background: #eee; flex: none; }
 .qrow .q-main { flex: 1; min-width: 0; }
 .qrow .q-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.qrow.playing .q-title { color: var(--pink); font-weight: 600; }
+.qrow.playing .q-title {
+  font-weight: 700; color: var(--pink); font-weight: 600; }
 .qrow .q-up { color: var(--t3); font-size: 11px; }
 .qrow .q-dur { color: var(--t3); font-size: 11px; flex: none; font-variant-numeric: tabular-nums; }
 
 /* ---- 底部播放条 ---- */
 #playerbar {
+  backdrop-filter: blur(8px);
+  height: 72px;
+  flex: none;
+  border-top: 1px solid rgba(255,255,255,.06);
+  will-change: transform;
   position: fixed; left: 0; right: 0; bottom: 0; height: 76px; z-index: 60;
   background: rgba(255, 255, 255, .96);
   backdrop-filter: blur(10px);
@@ -1044,11 +1162,14 @@ body.roam-on .roam-only { display: inline-flex !important; }
   position: relative; cursor: pointer;
 }
 #pb-line-fill {
+  box-shadow: 0 0 6px color-mix(in srgb, var(--viz) 50%, transparent);
+  border-radius: 2px;
   position: absolute; left: 0; top: 0; bottom: 0; width: 0;
   background: linear-gradient(90deg, var(--viz), var(--viz-light));
   border-radius: 2px;
 }
 #pb-thumb {
+  transition: transform .15s, box-shadow .15s;
   position: absolute; top: 50%; width: 12px; height: 12px; border-radius: 50%;
   background: var(--viz); transform: translate(-50%, -50%) scale(0);
   transition: transform .15s; box-shadow: 0 1px 4px var(--viz);
@@ -1094,6 +1215,7 @@ body.roam-on .roam-only { display: inline-flex !important; }
 
 /* ---- 模态框 ---- */
 .modal-mask {
+  backdrop-filter: blur(4px);
   position: fixed; inset: 0; z-index: 90;
   background: rgba(0, 0, 0, .42);
   display: flex; align-items: center; justify-content: center;
@@ -1101,6 +1223,9 @@ body.roam-on .roam-only { display: inline-flex !important; }
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .modal {
+  max-height: 82vh;
+  overflow-y: auto;
+  animation: modalIn .22s cubic-bezier(.22,.85,.3,1);
   background: #fff; border-radius: 16px; padding: 26px 28px;
   width: 400px; max-width: calc(100vw - 40px); max-height: 84vh; overflow-y: auto;
   box-shadow: 0 12px 48px rgba(0, 0, 0, .22);
@@ -1219,8 +1344,10 @@ body.roam-on .roam-only { display: inline-flex !important; }
 
 /* ---- 评论区 ---- */
 .cmt-total { padding: 10px 14px 2px; font-size: 12px; color: var(--t3); }
-.cmt { display: flex; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #f0f1f2; }
-.cmt img { width: 34px; height: 34px; border-radius: 50%; flex: none; background: #eee; object-fit: cover; }
+.cmt {
+  border-bottom: 1px solid rgba(255,255,255,.04); display: flex; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #f0f1f2; }
+.cmt img {
+  border-radius: 50%; width: 34px; height: 34px; border-radius: 50%; flex: none; background: #eee; object-fit: cover; }
 .cmt .c-main { flex: 1; min-width: 0; }
 .c-head { display: flex; align-items: center; gap: 8px; }
 .c-name { font-size: 12.5px; color: var(--t2); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1235,7 +1362,8 @@ body.roam-on .roam-only { display: inline-flex !important; }
 .c-subs .c-msg { font-size: 12.5px; }
 
 /* ---- 波形自定义面板 ---- */
-.vs-sec { margin-bottom: 16px; }
+.vs-sec {
+  contain: content; margin-bottom: 16px; }
 .vs-label { font-size: 12px; color: var(--t3); margin-bottom: 9px; }
 .vs-swatches { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
 .vs-sw {
@@ -1262,6 +1390,9 @@ body.roam-on .roam-only { display: inline-flex !important; }
 /* 网易云操作区（侧栏用户行下方） */
 #ne-actions { padding: 6px 0 0; }
 #ne-actions:empty { display: none; }
+#qq-actions { padding: 6px 0 0; }
+#qq-actions:empty { display: none; }
+#qq-user { margin-bottom: 6px; }
 
 /* 版本宇宙加宽弹窗：标题两行可辨 */
 .modal.wide { width: 680px; }
@@ -2574,3 +2705,535 @@ body.mv-light-tone.np-fullbg.immersive .searchbox input::placeholder { color: rg
 .room-req-btns { display: flex; gap: 5px; flex: none; }
 .room-req-btns .btn { padding: 3px 7px; font-size: 11px; }
 #room-req-status { min-height: 14px; }
+
+/* ============================================================
+   音效工作台
+   ============================================================ */
+.fx-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.fx-chip {
+  padding: 5px 14px; border-radius: 14px; font-size: 12.5px;
+  color: var(--t2); background: var(--bg); border: 1px solid var(--line);
+  transition: all .15s;
+}
+.fx-chip:hover { color: var(--t1); border-color: var(--pink); }
+.fx-chip.active { background: var(--pink); border-color: var(--pink); color: #fff; font-weight: 600; }
+.fx-note { margin-top: 8px; font-size: 11.5px; color: var(--t3); }
+.fx-chips + .vs-slider { margin-top: 10px; }
+.modal .vs-slider input[data-fx] { accent-color: #31c27c; }
+
+/* 顶栏工具按钮（深色模式 / 定时关闭 / 随机漫游） */
+.tb-tool {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--t2); transition: all .15s; flex: none;
+}
+.tb-tool svg { width: 18px; height: 18px; }
+.tb-tool:hover { background: var(--pink-l); color: var(--pink); }
+.tb-tool.on { color: var(--pink); }
+#top-right { display: flex; align-items: center; gap: 6px; }
+#qq-user { margin-bottom: 0; }
+/* 三个账号区（QQ音乐/网易云/B站）纵向堆叠 */
+#side-user-row { display: flex; flex-direction: column; gap: 6px; }
+#side-user-row > div { flex: none; width: 100%; }
+#side-user-row > button { flex: none; width: 100%; }
+/* QQ音乐歌单页 */
+.fc-tag.t-qq { background: rgba(49, 194, 124, .16); color: #1e9e63; }
+.nav-item .qq-green { color: #31c27c; }
+body.dark .fc-tag.t-qq { background: rgba(49, 194, 124, .22); color: #4fd68f; }
+
+/* ============================================================
+   深色模式（body.dark）：仿各大平台夜间主题
+   ============================================================ */
+body.dark {
+  --bg: #101116;
+  --card: #191b22;
+  --line: #2a2d37;
+  --t1: #e9ebef;
+  --t2: #a6abb5;
+  --t3: #6d727d;
+  --pink-l: #382028;
+  --blue-l: #12242e;
+  --shadow: 0 2px 14px rgba(0, 0, 0, .45);
+}
+body.dark .nav-item:hover { background: #21232b; }
+body.dark ::-webkit-scrollbar-thumb { background: #33363f; }
+body.dark ::-webkit-scrollbar-thumb:hover { background: #41444e; }
+body.dark .searchbox input { background: var(--card); }
+body.dark .btn:not(.primary):not(.blue):not(.danger) { background: var(--card); }
+body.dark .modal { background: var(--card); }
+body.dark .qr-img { background: #fff; }
+body.dark .m-input { background: var(--bg); border-color: var(--line); color: var(--t1); }
+body.dark .plpop, body.dark .queuepop { background: var(--card); }
+body.dark .select-sort select { background: var(--card); color: var(--t1); }
+body.dark .fx-chip { background: var(--bg); }
+body.dark .empty-box { color: var(--t3); }
+body.dark #playerbar { background: var(--card); }
+body.dark #mini-video { background: var(--card); }
+body.dark .toast { background: rgba(24, 25, 28, .95); }
+body.dark .modal-mask { background: rgba(0, 0, 0, .55); }
+body.dark .importbar-tip { color: var(--t2); }
+body.dark .view-fade { color: var(--t1); }
+/* 深色下仍为浅色底的特殊位 */
+body.dark .vs-picker { background: var(--bg); }
+body.dark .cdcase-inner,
+body.dark .rlstage { filter: brightness(.82); }
+
+/* ============================================================
+   纯听播放页美化：封面主题色 + 极光背景 + 黑胶光效 + 歌词动效
+   --np-accent 由封面自动取色（JS 注入，失败回落 --viz）
+   ============================================================ */
+.np-stage {
+  background:
+    radial-gradient(130% 140% at 18% 8%, color-mix(in srgb, var(--np-accent, var(--viz)) 34%, #141021) 0%, color-mix(in srgb, var(--np-accent, var(--viz)) 12%, #141021) 45%, transparent 78%),
+    radial-gradient(130% 130% at 88% 100%, color-mix(in srgb, var(--np-accent, var(--viz)) 20%, #141021) 0%, transparent 60%),
+    linear-gradient(150deg, color-mix(in srgb, var(--np-accent, var(--viz)) 24%, #180f22) 0%, #0f0b15 80%);
+  transition: background .8s ease;
+}
+:root { --np-accent: var(--viz); }
+/* 极光流层：两团柔光缓慢漂移，颜色跟随封面主题色 */
+.np-aurora { position: absolute; inset: -20%; z-index: 0; pointer-events: none; filter: blur(46px) saturate(1.3); opacity: .62; }
+/* 三色系光斑：主色 / 补色(hue+70) / 金白(hue-60)
+   脉动改走 CSS keyframes（合成器缓存模糊层，绝不因 JS 每帧写 --beat 触发
+   1080p blur 重算 —— 旧实现是全屏「闪黑/掉帧」的元凶） */
+.np-aurora i {
+  position: absolute; display: block; border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--np-accent) 62%, transparent) 0%, transparent 68%);
+  mix-blend-mode: screen;
+  animation: aurora-pulse 4.6s ease-in-out infinite alternate;
+  will-change: opacity, transform;
+}
+.np-aurora i:nth-child(1) { width: 55%; height: 72%; left: -8%; top: -6%; filter: hue-rotate(0deg) brightness(1.05); animation: aurora-a 19s ease-in-out infinite alternate, aurora-pulse 4.6s ease-in-out infinite alternate; }
+.np-aurora i:nth-child(2) { width: 48%; height: 60%; right: -6%; bottom: -10%; filter: hue-rotate(70deg) brightness(1.1); background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--viz) 46%, transparent) 0%, transparent 66%); animation: aurora-b 24s ease-in-out infinite alternate, aurora-pulse 5.8s ease-in-out infinite alternate-reverse; }
+.np-aurora i:nth-child(3) { width: 30%; height: 42%; left: 38%; top: 30%; filter: hue-rotate(-65deg) brightness(1.18) saturate(.9); background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--np-accent) 34%, #fff8e0 22%) 0%, transparent 64%); animation: aurora-a 29s ease-in-out infinite alternate-reverse, aurora-pulse 3.9s ease-in-out infinite alternate; }
+@keyframes aurora-pulse { from { opacity: .3; } to { opacity: .84; } }
+@keyframes aurora-a { from { transform: translate(0, 0) scale(1); } to { transform: translate(9%, 12%) scale(1.18); } }
+@keyframes aurora-b { from { transform: translate(0, 0) scale(1.1); } to { transform: translate(-11%, -8%) scale(.94); } }
+body.dark .np-aurora { opacity: .42; }
+/* 黑胶光效：高光扫过 + 随播放脉动的主题色光晕 */
+.np-vinyl::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(from 210deg, transparent 0 62%, rgba(255, 255, 255, .09) 74%, rgba(255, 255, 255, .16) 80%, transparent 92%);
+  mix-blend-mode: screen; pointer-events: none;
+}
+.np-vinyl {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, .06),
+    0 0 42px -8px color-mix(in srgb, var(--np-accent) 46%, transparent),
+    0 18px 48px rgba(0, 0, 0, .55);
+  transition: box-shadow .6s ease;
+}
+.np-stage.is-playing .np-vinyl { animation-play-state: running; box-shadow: 0 0 0 1px rgba(255,255,255,.08), 0 0 62px -6px color-mix(in srgb, var(--np-accent) 68%, transparent), 0 18px 48px rgba(0, 0, 0, .55); }
+.np-vinyl .vp-cover { box-shadow: 0 0 0 6px #0b0b0f, 0 0 0 7px color-mix(in srgb, var(--np-accent) 42%, transparent), 0 0 26px rgba(0, 0, 0, .4); }
+/* 标题与副信息 */
+.nt-title { text-shadow: 0 2px 18px rgba(0, 0, 0, .35); }
+.nt-title.long { font-size: 18px; }
+.nt-sub .badge { background: rgba(255, 255, 255, .14); backdrop-filter: blur(6px); }
+.nt-sub .badge.qq-badge { background: rgba(49, 194, 124, .3); }
+.nt-sub .badge.ne-badge { background: rgba(230, 0, 38, .3); }
+/* 玻璃质感标签与操作按钮 */
+.nt-tabs { margin-top: 18px; }
+.nt-tab { backdrop-filter: blur(8px); }
+/* 歌词动效：当前句放大渐显 + 主题色渐变字 */
+.nt-line {
+  color: rgba(255, 255, 255, .42);
+  font-size: var(--lyric-size, 14px);
+  line-height: 2;
+  transition: color .3s ease; /* 只过渡颜色：transform/字号过渡在部分GPU上有重影 */
+  cursor: pointer;
+  animation: lyrin .4s ease;
+}
+@keyframes lyrin { from { opacity: .25; } to { opacity: 1; } }
+.nt-line:hover {
+  padding-left: 4px;
+  transition: color .3s, padding-left .2s; color: rgba(255, 255, 255, .78); }
+.nt-line.active {
+  /* 卡拉OK填充：底色暗文字，渐变亮字按 --kfill(0~100%) 从左往右覆盖 */
+  color: rgba(255, 255, 255, .30);
+  background: linear-gradient(100deg, #fff 20%, color-mix(in srgb, var(--np-accent) 55%, #ffd9e5) 80%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  background-size: var(--kfill, 100%) 100%;
+  background-repeat: no-repeat;
+  font-size: calc(var(--lyric-size, 14px) + 3px);
+  font-weight: 700;
+  transform: translateX(6px) scale(1.02);
+  transform-origin: left center;
+  text-shadow: 0 0 16px color-mix(in srgb, var(--np-accent) 40%, transparent);
+}
+/* 顶部工具行：音量/模式按钮容器无需改动（复用 pb-btn） */
+/* 来源徽标 */
+.nt-src { color: rgba(255, 255, 255, .42); }
+/* 播放队列卡片微调 */
+.qrow.playing .q-title { color: var(--np-accent); }
+
+/* ============================================================
+   纯听页全屏播放：隐藏侧栏/顶栏/播放条，舞台铺满整屏，黑胶歌词放大
+   ============================================================ */
+body.np-fs #sidebar,
+body.np-fs #topbar,
+body.np-fs #playerbar,
+body.np-fs #importbar,
+body.np-fs #mini-video { display: none !important; }
+body.np-fs #view { height: 100vh; }
+body.np-fs .np { height: 100vh; }
+body.np-fs .np-audio .np-stage,
+#np-stage:fullscreen {
+  height: 100vh;
+  min-height: 0;
+  border-radius: 0;
+  padding: max(24px, 4vh) max(32px, 4vw);
+}
+/* 全屏下元素放大 */
+body.np-fs .np-vinyl-wrap { width: 44%; }
+body.np-fs .np-vinyl { width: min(50vh, 520px); }
+body.np-fs .nt-title { font-size: clamp(20px, 3.4vh, 30px); }
+body.np-fs .nt-sub { font-size: 14px; }
+body.np-fs .nt-body { margin-top: 18px; }
+body.np-fs .nt-line {
+  contain: layout;
+  will-change: color; line-height: 2.25; }
+body.np-fs .nt-line.active { font-size: calc(var(--lyric-size, 14px) + 6px); margin-left: 8px; } /* 不用transform缩放：避免部分GPU下歌词行重影 */
+body.np-fs .nt-actions { margin-top: 16px; }
+body.np-fs .nt-actions .btn { padding: 9px 18px; font-size: 13.5px; border-radius: 18px; }
+body.np-fs .nt-tabs { margin-top: 22px; }
+/* 退出全屏按钮：右上角悬浮，鼠标静止自动隐藏 */
+.np-fs-exit {
+  backdrop-filter: blur(8px);
+  position: absolute; top: 16px; right: 16px; z-index: 9;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(20, 16, 25, .55); color: #fff;
+  border: 1px solid rgba(255, 255, 255, .25);
+  opacity: 0; transition: opacity .25s, background .15s;
+  backdrop-filter: blur(6px);
+}
+.np-fs-exit svg { width: 18px; height: 18px; }
+.np-fs-exit:hover {
+  opacity: 1 !important;
+  transform: scale(1.1); background: var(--pink); border-color: var(--pink); }
+body.np-fs .np-fs-exit { display: flex; }
+body.np-fs.fs-idle .np-fs-exit,
+body.np-fs.fs-idle .np-fs-exit:hover { opacity: 0; pointer-events: none; }
+body.np-fs:not(.fs-idle) .np-fs-exit { opacity: 1; }
+/* 鼠标静止 2.6 秒 → 氛围模式：按钮/控制条/页签整体淡出，只留标题+歌词+彩胶+声浪 */
+.nt-actions, .np-ctrls, .nt-tabs { transition: opacity .45s ease; }
+body.np-fs.fs-idle .nt-actions,
+body.np-fs.fs-idle .np-ctrls,
+body.np-fs.fs-idle .nt-tabs { opacity: 0; pointer-events: none; }
+
+/* ============================================================
+   纯听页 · QQ音乐风格浅色舞台：浅底 + 右上溢出大彩胶 + 左侧文字
+   ============================================================ */
+.np-stage.light { color: #17181c; }
+.np-stage.light .np-bg-img,
+.np-stage.light .np-aurora { display: none; }
+.np-stage.light .np-bg-shade {
+  /* 背景色比声浪淡两档，避免同色互相糊住 */
+  background:
+    radial-gradient(88% 115% at 86% 6%, color-mix(in srgb, var(--np-accent, var(--viz)) 20%, transparent) 0%, color-mix(in srgb, var(--np-accent, var(--viz)) 7%, transparent) 44%, transparent 74%),
+    radial-gradient(130% 95% at 100% 100%, color-mix(in srgb, var(--np-accent, var(--viz)) 6%, transparent) 0%, transparent 58%),
+    linear-gradient(118deg, #f8f7fb 0%, #f2f0f6 55%, #eeecf2 100%);
+}
+/* 大彩胶：巨大、右上角溢出屏幕 */
+.np-stage.light .np-vinyl-wrap {
+  position: absolute; z-index: 1;
+  right: max(-9vw, -190px); top: min(-9vh, -120px);
+  width: min(68vh, 44vw);
+  align-self: auto; display: block;
+}
+.np-stage.light .np-vinyl {
+  width: 100%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, .95) 0 0.8%, transparent 1.4%),
+    repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, .14) 0 2px, rgba(0, 0, 0, .025) 2px 5px, transparent 5px 9px),
+    radial-gradient(circle at 36% 32%,
+      color-mix(in srgb, var(--np-accent, var(--viz)) 78%, #ffffff) 0%,
+      var(--np-accent, var(--viz)) 48%,
+      color-mix(in srgb, var(--np-accent, var(--viz)) 72%, #143300) 100%);
+  box-shadow:
+    0 34px 90px -22px color-mix(in srgb, var(--np-accent, var(--viz)) 55%, transparent),
+    0 26px 60px rgba(35, 32, 48, .28);
+}
+.np-stage.light .np-vinyl::before {
+  background: repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, .08) 0 1px, transparent 1px 6.5px);
+}
+.np-stage.light .np-vinyl::after {
+  background: conic-gradient(from 230deg, transparent 0 58%, rgba(255, 255, 255, .2) 73%, rgba(255, 255, 255, .34) 82%, transparent 94%);
+}
+.np-stage.light .np-vinyl .vp-cover {
+  inset: 22%;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, .95),
+    0 16px 38px rgba(24, 22, 34, .3);
+}
+.np-stage.light .np-tonearm { display: none; }
+/* 左列：文字区（深色文字） */
+.np-stage.light .np-trackinfo { width: 52%; flex: none; }
+.np-stage.light .nt-title { color: #17181c; }
+.np-stage.light .nt-sub { color: #6b7078; }
+.np-stage.light .nt-sub .badge { background: rgba(0, 0, 0, .07); color: #5a5f68; }
+.np-stage.light .nt-sub .badge.qq-badge { background: rgba(49, 194, 124, .15); color: #1e9e63; }
+.np-stage.light .nt-sub .badge.ne-badge { background: rgba(230, 0, 38, .12); color: #d3214a; }
+.np-stage.light .nt-tabs { margin-top: 18px; }
+.np-stage.light .nt-tab { background: rgba(0, 0, 0, .055); color: #6b7078; backdrop-filter: none; }
+.np-stage.light .nt-tab:hover { background: rgba(0, 0, 0, .1); color: #33363d; }
+.np-stage.light .nt-tab.active {
+  background: color-mix(in srgb, var(--np-accent, var(--viz)) 16%, #ffffff);
+  color: var(--np-accent, var(--viz));
+  font-weight: 600;
+}
+.np-stage.light .nt-line { color: rgba(23, 24, 28, .4); }
+.np-stage.light .nt-line:hover { color: rgba(23, 24, 28, .72); }
+.np-stage.light .nt-line.active {
+  color: rgba(23, 24, 28, .26);
+  background: linear-gradient(100deg,
+    color-mix(in srgb, var(--np-accent, var(--viz)) 86%, #000000) 20%,
+    color-mix(in srgb, var(--np-accent, var(--viz)) 55%, #33363d) 80%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  background-size: var(--kfill, 100%) 100%;
+  background-repeat: no-repeat;
+}
+.np-stage.light .nt-desc { color: #4a4e56; }
+.np-stage.light .nt-nolyric-box,
+.np-stage.light .nt-nolyric-box p { color: #6b7078; }
+.np-stage.light .nt-nolyric-box svg { opacity: .32; }
+.np-stage.light .nt-nolyric-box span { color: rgba(23, 24, 28, .42); }
+.np-stage.light .nt-src { color: rgba(23, 24, 28, .4); }
+.np-stage.light .nt-body::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, .16); }
+.np-stage.light .lyric-back {
+  background: rgba(255, 255, 255, .88); color: #33363d;
+  border-color: rgba(0, 0, 0, .14); backdrop-filter: blur(6px);
+}
+.np-stage.light .lyric-back:hover { background: var(--np-accent, var(--viz)); border-color: transparent; color: #fff; }
+.np-stage.light .nt-actions .btn {
+  background: rgba(0, 0, 0, .05); border-color: rgba(0, 0, 0, .13); color: #33363d;
+}
+.np-stage.light .nt-actions .btn:hover { background: rgba(0, 0, 0, .09); border-color: rgba(0, 0, 0, .22); color: #17181c; }
+.np-stage.light .nt-actions .btn.primary { background: var(--pink); border-color: var(--pink); color: #fff; }
+.np-stage.light .nt-actions .btn.primary:hover { background: var(--pink-d); border-color: var(--pink-d); color: #fff; }
+.np-stage.light .nt-actions .btn.ghost { opacity: .85; }
+/* 深色模式下浅色舞台的按钮例外：body.dark .btn 的 :not() 链优先级更高，必须显式压回 */
+body.dark .np-stage.light .nt-actions .btn:not(.primary):not(.blue):not(.danger) {
+  background: rgba(0, 0, 0, .05);
+  border-color: rgba(0, 0, 0, .13);
+  color: #33363d;
+}
+body.dark .np-stage.light .nt-actions .btn:not(.primary):not(.blue):not(.danger):hover {
+  background: rgba(0, 0, 0, .09);
+  border-color: rgba(0, 0, 0, .22);
+  color: #17181c;
+}
+.np-stage.light .up-link { color: var(--pink); }
+/* 浅色下舞台律动条：保持足够不透明度，但不铺满歌词区 */
+.np-stage.light .stage-viz { opacity: .9; height: min(20%, 170px); }
+/* 全屏播放时彩胶更大 */
+body.np-fs .np-stage.light .np-vinyl-wrap {
+  width: min(78vh, 52vw);
+  right: max(-10vw, -220px); top: min(-11vh, -150px);
+}
+
+/* ---- 播放页内嵌控制条（普通/全屏共用；固定浅色样式，不受深色模式影响） ---- */
+.np-ctrls { margin-top: 14px; width: 100%; }
+.npc-progress { display: flex; align-items: center; gap: 10px; }
+.npc-progress > span { font-size: 11.5px; color: #6b7078; font-variant-numeric: tabular-nums; flex: none; }
+.npc-track { flex: 1; height: 16px; display: flex; align-items: center; cursor: pointer; position: relative; }
+.npc-track::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+  height: 4px; border-radius: 2px; background: rgba(0, 0, 0, .1);
+}
+.npc-fill {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  height: 4px; border-radius: 2px; width: 0%;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--np-accent, var(--viz)) 78%, #ffffff) 0%,
+    var(--np-accent, var(--viz)) 40%,
+    color-mix(in srgb, var(--np-accent, var(--viz)) 60%, #ffb3cb) 100%);
+  background-size: 220% 100%;
+  animation: npcflow 3.2s linear infinite;
+  pointer-events: none;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--np-accent, var(--viz)) 60%, transparent);
+}
+@keyframes npcflow { to { background-position: -220% 0; } }
+.npc-thumb {
+  position: absolute; top: 50%; left: 0%; transform: translate(-50%, -50%);
+  width: 12px; height: 12px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, .35); pointer-events: none;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.npc-track:hover .npc-thumb {
+  transform: translate(-50%, -50%) scale(1.32);
+  box-shadow: 0 1px 10px rgba(0, 0, 0, .45), 0 0 0 4px color-mix(in srgb, var(--np-accent, var(--viz)) 24%, transparent);
+}
+.npc-btns { display: flex; align-items: center; gap: 16px; margin-top: 10px; }
+/* Liquid Glass 质感：内高光 + 背景模糊 + 顶部反光 */
+.npc-btn {
+  background: rgba(255, 255, 255, .55);
+  backdrop-filter: blur(10px) saturate(1.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .75),
+    inset 0 -1px 0 rgba(0, 0, 0, .04),
+    0 2px 8px rgba(0, 0, 0, .07);
+}
+.npc-btn:hover {
+  transform: translateY(-1px);
+  transition: transform .15s ease, background .15s;
+  background: rgba(255, 255, 255, .72);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .9),
+    inset 0 -1px 0 rgba(0, 0, 0, .05),
+    0 3px 12px rgba(0, 0, 0, .1);
+}
+.npc-btn.big {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--np-accent, var(--viz)) 82%, #ffffff) 0%, var(--np-accent, var(--viz)) 70%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .55),
+    0 4px 14px color-mix(in srgb, var(--np-accent, var(--viz)) 45%, transparent);
+}
+.npc-btn.big:hover { background: var(--pink-d); }
+.npc-btn {
+  width: 40px; height: 40px; border-radius: 50%; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  color: #33363d; background: rgba(0, 0, 0, .05); border: 1px solid rgba(0, 0, 0, .1);
+  transition: transform .1s, background .15s;
+}
+.npc-btn:hover { background: rgba(0, 0, 0, .09); }
+.npc-btn:active { transform: scale(.92); }
+.npc-btn svg { width: 18px; height: 18px; }
+.npc-btn.big {
+  width: 52px; height: 52px; background: var(--pink); border-color: var(--pink); color: #fff;
+  box-shadow: 0 8px 20px -6px rgba(251, 114, 153, .55);
+}
+.npc-btn.big:hover { background: var(--pink-d); }
+.npc-btn.big svg { width: 22px; height: 22px; }
+.npc-vol { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.npc-volico { width: 17px; height: 17px; color: #6b7078; flex: none; }
+.npc-vol input {
+  width: 92px; accent-color: var(--np-accent, var(--viz)); cursor: pointer;
+  transition: opacity .2s;
+}
+.npc-vol input:hover { opacity: 1; }
+/* 全屏时控制条稍微放大 */
+body.np-fs .np-ctrls { margin-top: 18px; }
+body.np-fs .npc-btn { width: 44px; height: 44px; }
+body.np-fs .npc-btn.big { width: 58px; height: 58px; }
+
+
+/* ---- 界面深度优化 v2（播放/队列/收藏夹） ---- */
+
+/* 正在播放的卡片：呼吸发光边框 */
+.playing .cover { outline: 3px solid var(--pink); outline-offset: -3px; animation: cardglow 3.2s ease-in-out infinite; }
+@keyframes cardglow {
+  0%, 100% { outline-color: color-mix(in srgb, var(--pink) 55%, transparent); }
+  50% { outline-color: color-mix(in srgb, var(--pink) 100%, transparent); }
+}
+
+/* 正在播放的卡片标题：粉色高亮 */
+.playing .card-title { color: var(--pink); font-weight: 700; }
+
+/* 收藏夹卡片 hover 抬起 */
+.folder-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.1); }
+
+/* 卡片 hover 微缩放 */
+.card:hover { transform: translateY(-1px); transition: transform .12s; }
+
+/* 播放控制按钮 hover 反馈 */
+.cbtn-m, .cbtn-p { transition: transform .12s, background .12s; }
+.cbtn-m:hover, .cbtn-p:hover { background: rgba(0,0,0,.06); }
+.cbtn-m:active, .cbtn-p:active { transform: scale(.92); }
+
+/* 工具栏按钮 hover */
+.toolbar button { transition: background .12s, transform .1s; }
+.toolbar button:active { transform: scale(.96); }
+
+/* 队列/歌单列表行 hover */
+.rows .row { transition: background .12s; }
+.rows .row:hover { background: rgba(0,0,0,.03); }
+
+/* Tab 选中指示条 */
+#np-tabs button.on::after, .np-tabs button.on::after {
+  content: ''; display: inline-block; width: 18px; height: 2.5px;
+  border-radius: 2px; background: var(--pink); margin-left: 6px; vertical-align: middle;
+}
+
+/* 进度条 thumb hover 发光 */
+#seek::-webkit-slider-thumb, input[type="range"]::-webkit-slider-thumb {
+  transition: box-shadow .15s;
+}
+#seek:active::-webkit-slider-thumb, input[type="range"]:active::-webkit-slider-thumb {
+  box-shadow: 0 0 14px color-mix(in srgb, var(--pink) 50%, transparent);
+}
+
+/* 页面切换淡入 */
+.view-fade { animation: viewfade .25s ease; }
+@keyframes viewfade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* 弹窗动画优化 */
+.modal-mask { animation: maskfade .2s ease; }
+@keyframes maskfade { from { opacity: 0; } to { opacity: 1; } }
+.modal { animation: modalpop .22s ease; }
+@keyframes modalpop { from { opacity: 0; transform: scale(.95) translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* 频谱条随节拍增亮（--beat 由分析器低频能量驱动） */
+.np-stage.is-playing .stage-viz { opacity: calc(.75 + var(--beat, 0) * .25); }
+
+/* 封面呼吸缩放：播放时轻微律动 */
+.np-stage.is-playing .vp-cover img { animation: coverbreath 8s ease-in-out infinite; }
+@keyframes coverbreath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+/* 光尘粒子层：全舞台铺满，随节拍闪烁 */
+.np-dust {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 1; opacity: .9;
+}
+body.paused .np-dust { opacity: .4; }
+
+/* ============ 深度优化批次5b：统一精修 ============ */
+#main { overscroll-behavior: contain; }
+body.np-fs { background: #0a0a0e; transition: opacity .3s ease; }
+.side-sec::-webkit-scrollbar { width: 6px; }
+.side-sec::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 3px; }
+::selection { background: rgba(251,114,153,.35); color: inherit; }
+button:focus-visible, input:focus-visible { outline: 2px solid rgba(251,114,153,.5); outline-offset: 1px; border-radius: 4px; }
+#topbar .searchbox { max-width: 500px; }
+.nt-sub .badge { border-radius: 10px; padding: 2px 8px; font-weight: 600; transition: background .2s, color .2s; }
+#playerbar { backdrop-filter: blur(8px); }
+.npc-vol input:hover { opacity: 1; }
+
+/* ============ 深度优化批次8：收尾精修 ============ */
+.modal::-webkit-scrollbar { width: 5px; }
+.modal::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 3px; }
+.modal { max-height: 82vh; overflow-y: auto; }
+.dm-layer { pointer-events: none; }
+.qrow.playing .q-title { font-weight: 700; }
+.np-stage { min-height: min(480px, calc(100vh - 100px)); contain: layout; }
+.npc-btn:hover { transform: translateY(-1px); transition: transform .15s ease, background .15s; }
+.np-stage.light .np-tonearm { opacity: .7; }
+
+/* ============ 搜索联想下拉框 ============ */
+.suggest-box {
+  position: absolute; z-index: 100;
+  background: rgba(18, 18, 24, .96);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.4);
+  max-height: 320px; overflow-y: auto;
+  backdrop-filter: blur(12px);
+}
+.sg-item {
+  padding: 9px 16px; cursor: pointer;
+  font-size: 13.5px; color: rgba(255,255,255,.75);
+  transition: background .12s, color .12s;
+}
+.sg-item:hover { background: rgba(255,255,255,.08); color: #fff; }
+.searchbox { position: relative; }
+
+/* ---- 合并时新增 ----
+   播放页内嵌的播放按钮（打包版）：打包版的舞台延伸到底部播放栏下面，这排按钮平时被播放栏盖住，
+   只在纯听全屏时露出。源码版让播放页给播放栏让出了位置，合并后它们会和播放栏同时出现，
+   所以按显隐规则写明：底部播放栏展开着且不在全屏时不显示；播放栏收起或全屏时照常显示。
+   内嵌的进度条不受影响（打包版平时也露出它）。 */
+body.immersive.pb-on:not(.pb-collapsed):not(.np-fs) .npc-btns { display: none; }
+/* 纯听全屏时播放栏本来就不显示，“收起/展开播放栏”的小按钮也不该留在画面里 */
+body.np-fs #pb-toggle { display: none !important; }
+
