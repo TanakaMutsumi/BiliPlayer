@@ -8,7 +8,8 @@ const { packager } = require('@electron/packager');
 const root = path.join(__dirname, '..');
 const dist = path.join(root, 'dist');
 const excluded = [
-  'dist', 'data', 'backup', '.zcode', 'scripts', 'tmp', '.ref', 'bin', 'tmp-npm'
+  'dist', 'data', 'backup', '.zcode', 'scripts', 'tmp', '.ref', 'bin', 'tmp-npm',
+  '.git' // 仓库历史和远程配置不进安装包（否则包体翻倍，分享时还会带出提交记录）
 ];
 const excludedModules = ['electron', 'electron-packager', 'electron-winstaller', '.bin'];
 

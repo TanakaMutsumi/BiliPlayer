@@ -1622,8 +1622,10 @@ function rcPresetId(name) {
   const P = window.AudioFX && AudioFX.PRESETS;
   if (!P) return '';
   if (name === 'off') return 'original';
-  if (P[name]) return name;
-  return P['g-' + name] ? 'g-' + name : ''; // 与源码版原有预设重名的，转换后带 g- 前缀
+  // 手机端发来的是打包版的编号。与源码版原有预设重名的那两个（ethereal、concert），转换后带 g- 前缀，
+  // 必须先认它们——否则手机上的“空灵韵”会切到源码版的“空灵人声”
+  if (P['g-' + name]) return 'g-' + name;
+  return P[name] ? name : '';
 }
 function rcFxToggle(key, onValue, label) {
   const s = window.AudioFX ? AudioFX.state : null;
