@@ -23,13 +23,14 @@ const mSongUrl = require('NeteaseCloudMusicApi/module/song_url.js');       // we
 const mSongDetail = require('NeteaseCloudMusicApi/module/song_detail.js');
 const mRegisterAnon = require('NeteaseCloudMusicApi/module/register_anonimous.js');
 const mSearch = require('NeteaseCloudMusicApi/module/search.js');
-const mHeartbeat = require('NeteaseCloudMusicApi/module/playmode_intelligence_list.js'); // 心动模式
-const mPersonalFm = require('NeteaseCloudMusicApi/module/personal_fm.js');               // 私人漫游FM
-const mPersonalFmMode = require('NeteaseCloudMusicApi/module/personal_fm_mode.js');     // FM 模式（可带数量）
-const mRecommendSongs = require('NeteaseCloudMusicApi/module/recommend_songs.js');       // 每日推荐（漫游兜底）
-const mFmTrash = require('NeteaseCloudMusicApi/module/fm_trash.js');                     // 漫游不喜欢
-const mLike = require('NeteaseCloudMusicApi/module/like.js');                            // 红心
-const mSimiSong = require('NeteaseCloudMusicApi/module/simi_song.js');                   // 相似歌曲
+  const mHeartbeat = require('NeteaseCloudMusicApi/module/playmode_intelligence_list.js'); // 心动模式
+  const mPersonalFm = require('NeteaseCloudMusicApi/module/personal_fm.js');               // 私人漫游FM
+  const mPersonalFmMode = require('NeteaseCloudMusicApi/module/personal_fm_mode.js');     // FM 模式（可带数量）
+  const mRecommendSongs = require('NeteaseCloudMusicApi/module/recommend_songs.js');       // 每日推荐（漫游兜底）
+  const mPersonalizedNewsong = require('NeteaseCloudMusicApi/module/personalized_newsong.js'); // 每日推荐拿不到时的兜底（打包版）
+  const mFmTrash = require('NeteaseCloudMusicApi/module/fm_trash.js');                     // 漫游不喜欢
+  const mLike = require('NeteaseCloudMusicApi/module/like.js');                            // 红心
+  const mSimiSong = require('NeteaseCloudMusicApi/module/simi_song.js');                   // 相似歌曲
 
 function stripTags(s) { return String(s || '').replace(/<em[^>]*>/g, '').replace(/<\/em>/g, ''); }
 
@@ -283,6 +284,37 @@ class NetEase {
     } catch (e) { /* 词典是增强项，失败不影响主流程 */ }
     return Array.from(new Set(out)).slice(0, 14);
   }
+  /* ---------- 搜索（聚合用） ---------- */
+  async search(keyword, limit) {
+    const body = await this._mod(require('NeteaseCloudMusicApi/module/search.js'), { keywords: keyword, type: 1, limit: limit || 15, offset: 0 });
+    const songs = (body && body.result && body.result.songs) || [];
+    return songs.map(t => ({
+      nid: t.id,
+      title: (t.name || '').replace(/<em[^>]*>/g, '').replace(/<\/em>/g, ''),
+      artist: ((t.ar || t.artists) || []).map(a => a.name).join('/'),
+      album: ((t.al || t.album) || {}).name || '',
+      pic: ((t.al || t.album) || {}).picUrl || '',
+      duration: Math.round((t.dt || t.duration || 0) / 1000),
+      fee: t.fee || 0
+    }));
+  }
+
+  /* ---------- 每日推荐：登录走每日30首，未登录/风控回退推荐新歌 ---------- */
+  async recommendSongs() {
+    if (this.loggedIn) {
+      try {
+        const d = await this._mod(mRecommendSongs, {});
+        const arr = ((d && d.data && d.data.dailySongs) || []);
+        if (arr.length) return { label: '每日推荐 · 基于你的口味生成', items: arr.slice(0, 30).map(t => this._mapTrack(t)) };
+      } catch (e) { /* 回退到新歌 */ }
+    }
+    try {
+      const d2 = await this._mod(mPersonalizedNewsong, { limit: 20 });
+      const arr2 = (d2 && (d2.data || d2.result)) || [];
+      return { label: '推荐新歌 · 热门上新', items: arr2.slice(0, 20).map(t => this._mapTrack(t.song || t)) };
+    } catch (e) { return { label: '', items: [] }; }
+  }
+
   /* ---------- 歌曲 ---------- */
   neQualityLabel(d) {
     const lv = String((d && d.level) || '');

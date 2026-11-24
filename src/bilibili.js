@@ -267,6 +267,14 @@ class Bilibili {
     };
   }
 
+  /* ---------- 稍后再看：/x/v2/history/toview/web（返回 favVideos 同形状） ---------- */
+  async watchLaterVideos() {
+    await this._requireLogin();
+    const d = await this._get('https://api.bilibili.com/x/v2/history/toview/web', {}, { referer: 'https://www.bilibili.com/' });
+    const items = (d.list || []).filter(x => x.bvid).map(x => this._normFav(x)).filter(Boolean);
+    return { title: '稍后再看', total: d.count || items.length, hasMore: false, items };
+  }
+
   async favVideos(mediaId, pn = 1, ps = 20, keyword = '') {
     const d = await this._get('https://api.bilibili.com/x/v3/fav/resource/list',
       { media_id: mediaId, pn, ps, keyword: keyword || '', order: 'mtime', type: 0, tid: 0, platform: 'web' }, {});

@@ -11,6 +11,8 @@ if (!process.env.BP_ALLOW_MULTI && !app.requestSingleInstanceLock()) {
 let win = null;
 let serverPort = 0;
 let neLoginWin = null;
+let qqLoginWin = null;
+let qqKeepWin = null; // QQ音乐Cookie保活窗口（不可见，定期访问y.qq.com让服务端续期凭证）
 const widgetWins = new Map(); // 桌面组件窗口（widget / desk-lyrics）
 
 function createWindow(port) {
@@ -52,7 +54,12 @@ function createWindow(port) {
         const w2 = new BrowserWindow(opts);
         w2.setAlwaysOnTop(true, 'screen-saver');
         w2.loadURL(url);
-        w2.on('closed', () => { if (deskWinRef === w2) { deskWinRef = null; deskRects = []; } widgetWins.delete(key); });
+          w2.on('closed', () => {
+            if (deskWinRef === w2) { deskWinRef = null; deskRects = []; }
+            widgetWins.delete(key);
+            // 无论组件窗口以何种方式关闭，都同步主窗口的开关状态
+            try { if (win && !win.isDestroyed()) win.webContents.send('widget-window-closed', key); } catch (e) {}
+          });
         widgetWins.set(key, w2);
         return { action: 'deny' };
       }
@@ -115,6 +122,11 @@ ipcMain.on('widget-fit', (event) => {
     if (size && size.w > 0 && size.h > 0) win.setContentSize(size.w, size.h);
   }).catch(() => {});
 });
+/* 组件窗口自关通道：window.close() 失效时兜底 */
+ipcMain.on('widget-close', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win && !win.isDestroyed()) win.close();
+});
 
 /* 网易云一键网页登录：弹出官方登录页，登录成功后自动抓取Cookie交给本地服务 */
 ipcMain.handle('open-ne-web-login', () => {
@@ -150,6 +162,95 @@ ipcMain.handle('open-ne-web-login', () => {
     } catch (e) { /* 登录窗口关闭竞态等，忽略 */ }
   }, 1000);
   neLoginWin.on('closed', () => { clearInterval(timer); neLoginWin = null; });
+  return true;
+});
+
+/* 退出QQ音乐：把Jar里的qq.com Cookie全部移除（配合服务端清Cookie文件） */
+ipcMain.handle('qq-jar-clear', async () => {
+  try {
+    const { session } = require('electron');
+    const all = await session.defaultSession.cookies.get({});
+    let n = 0;
+    for (const c of all) {
+      if (!(c.domain || '').includes('qq.com')) continue;
+      const url = (c.domain || '').startsWith('.') ? 'https://www' + c.domain : 'https://' + (c.domain || '').replace(/^\./, '');
+      try { await session.defaultSession.cookies.remove(url, c.name); n++; } catch (e) { }
+    }
+    return n;
+  } catch (e) { return -1; }
+});
+
+/* QQ音乐一键网页登录：弹出 y.qq.com 登录页（支持QQ/微信/扫码），登录成功后
+   自动抓取 qq.com 域下的登录Cookie（uin + qm_keyst 等）交给本地服务 */
+ipcMain.handle('open-qq-web-login', () => {
+  if (qqLoginWin && !qqLoginWin.isDestroyed()) { qqLoginWin.focus(); return true; }
+  qqLoginWin = new BrowserWindow({
+    width: 520,
+    height: 680,
+    title: 'QQ音乐登录',
+    autoHideMenuBar: true,
+    backgroundColor: '#ffffff',
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
+  });
+  qqLoginWin.loadURL('https://y.qq.com/n/ryqq/login');
+  let done = false;
+  let psrfWait = 0; // 等会员凭证 psrf_musickey_createtime 写入
+  const timer = setInterval(async () => {
+    if (!qqLoginWin || qqLoginWin.isDestroyed()) { clearInterval(timer); return; }
+    if (done) return;
+    try {
+      // 只取 qq.com 域的Cookie（避免混入B站等其他会话）
+      const all = await qqLoginWin.webContents.session.cookies.get({});
+      const qqq = all.filter(c => (c.domain || '').includes('qq.com'));
+      const kv = {};
+      qqq.forEach(c => { if (c.value) kv[c.name] = c.value; });
+      // 登录完成标志：有uin且有 qm_keyst（新版）或 qqmusic_key（旧版）
+      if (!kv.uin || kv.uin === '0' || (!kv.qm_keyst && !kv.qqmusic_key)) return;
+      /* psrf_musickey_createtime 通常在 qm_keyst 之后 1~3 秒才写入，
+         以前一检测到 qm_keyst 就立刻保存，结果漏掉 psrf_* → 已登录却按游客/非会员处理 */
+      if (!kv.psrf_musickey_createtime) {
+        psrfWait += 1;
+        if (psrfWait < 6) return;
+      }
+      done = true;
+      /* 必须保存全部 qq.com Cookie：VIP会员验证依赖 psrf_musickey_createtime /
+         psrf_qqunionid / psrf_access_token_expiresAt 等凭证，任何白名单裁剪
+         都会让会员降级为普通用户（会员歌曲显示 needbuy 播不了） */
+      const ck = qqq
+        .filter(c => c.value)
+        .map(c => c.name + '=' + c.value).join('; ');
+      const r = await new Promise(resolve => {
+        /* 定时同步走 merge（只增不删），避免把会员凭证冲掉 */
+      require('http').get('http://127.0.0.1:' + serverPort + '/api/qqcookie/merge?value=' + encodeURIComponent(ck), res => {
+          let d = '';
+          res.on('data', c => { d += c; });
+          res.on('end', () => { try { resolve(JSON.parse(d)); } catch (e) { resolve(null); } });
+        }).on('error', () => resolve(null));
+      });
+      /* 关窗前等3秒再重抓一次：QQ登录收尾时会轮换qm_keyst，
+         抓完立即关窗会漏掉轮换后的新key（表现为登录几分钟后失效） */
+      setTimeout(async () => {
+        let user = r && r.ok && r.data && r.data.user ? r.data.user : null;
+        try {
+          if (qqLoginWin && !qqLoginWin.isDestroyed()) {
+            const all2 = await qqLoginWin.webContents.session.cookies.get({});
+            const ck2 = all2.filter(c2 => (c2.domain || '').includes('qq.com') && c2.value).map(c2 => c2.name + '=' + c2.value).join('; ');
+            if (ck2) {
+              const r2 = await new Promise(resolve => {
+                require('http').get('http://127.0.0.1:' + serverPort + '/api/qqcookie/merge?value=' + encodeURIComponent(ck2), res => {
+                  let d = ''; res.on('data', c => { d += c; }); res.on('end', () => { try { resolve(JSON.parse(d)); } catch (e) { resolve(null); } });
+                }).on('error', () => resolve(null));
+              });
+              if (r2 && r2.ok && r2.data && r2.data.user) user = r2.data.user;
+            }
+          }
+        } catch (e) { /* 忽略 */ }
+        if (win && !win.isDestroyed()) win.webContents.send('qq-login-done', { ok: !!user, user });
+        try { if (qqLoginWin && !qqLoginWin.isDestroyed()) qqLoginWin.close(); } catch (e) { }
+      }, 3000);
+    } catch (e) { /* 登录窗口关闭竞态等，忽略 */ }
+  }, 1000);
+  qqLoginWin.on('closed', () => { clearInterval(timer); qqLoginWin = null; });
   return true;
 });
 
@@ -194,8 +295,64 @@ app.whenReady().then(() => {
   );
   process.env.BP_DATA_DIR = dataDir;
   const { startServer } = require('../server');
-  startServer(port => createWindow(port));
+  startServer(port => {
+    createWindow(port);
+    /* 启动后从 Chromium Cookie 罐重抓全量 QQ Cookie：
+       旧版本保存时裁掉了 psrf_musickey_createtime 等VIP凭证（导致会员降级），
+       这里自动补全 —— 用户无需重新登录 */
+    refreshQqCookieFromJar();
+    /* 每2分钟再同步一次：QQ音乐会在页面访问时轮换key，
+       服务端一直拿旧key就会出现"有会员也播不了会员歌"的老问题 */
+    setInterval(() => { refreshQqCookieFromJar(); }, 120 * 1000);
+    /* QQ音乐凭证保活：qm_keyst/psrf_* 需要页面访问才会被服务端续期。
+       只做Cookie同步不做访问，登录几小时后就会"会员歌播不了"。 */
+    /* 注意：不要用隐藏窗口反复访问 y.qq.com —— 实测会让Cookie键数变少（凭证丢失）。
+       改为依赖 merge 同步 + 失效时提示重新登录。 */
+  });
 });
 
 app.on('before-quit', () => { try { const s = require('../server'); s.cloudflared.stop(); s.roomServer.stop(); } catch (e) {} });
+/* 从默认 session 的 Cookie 罐重抓全部 qq.com Cookie 交给本地服务 */
+async function refreshQqCookieFromJar() {
+  try {
+    const { session } = require('electron');
+    const all = await session.defaultSession.cookies.get({});
+    const qqq = all.filter(c => (c.domain || '').includes('qq.com') && c.value);
+    const kv = {};
+    qqq.forEach(c => { kv[c.name] = c.value; });
+    if (!kv.uin || kv.uin === '0' || (!kv.qm_keyst && !kv.qqmusic_key)) return; // 未登录，跳过
+    const ck = qqq.map(c => c.name + '=' + c.value).join('; ');
+    await new Promise(resolve => {
+      require('http').get('http://127.0.0.1:' + serverPort + '/api/qqcookie/set?value=' + encodeURIComponent(ck), res => {
+        res.resume();
+        res.on('end', resolve);
+      }).on('error', resolve);
+    });
+    console.log('[QQ] Cookie已从浏览器罐补全（含VIP凭证）');
+  } catch (e) { /* 忽略 */ }
+}
+
+/* ---------- QQ音乐凭证保活 ---------- */
+function qqKeepStart() {
+  try {
+    if (qqKeepWin && !qqKeepWin.isDestroyed()) return;
+    qqKeepWin = new BrowserWindow({
+      width: 400, height: 300, show: false,
+      webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
+    });
+    qqKeepWin.webContents.on('did-finish-load', () => {
+      setTimeout(() => { refreshQqCookieFromJar(); }, 2000);
+    });
+    qqKeepWin.on('closed', () => { qqKeepWin = null; });
+    qqKeepWin.loadURL('https://y.qq.com/');
+    console.log('[QQ] 凭证保活已启动');
+  } catch (e) { console.log('[QQ] 保活启动失败', e.message); }
+}
+function qqKeepRefresh() {
+  try {
+    if (!qqKeepWin || qqKeepWin.isDestroyed()) { qqKeepStart(); return; }
+    qqKeepWin.loadURL('https://y.qq.com/'); // 重新载入触发续期
+  } catch (e) { }
+}
+
 app.on('window-all-closed', () => app.quit());
