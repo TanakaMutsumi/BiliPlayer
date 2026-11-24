@@ -5682,6 +5682,19 @@ async function qqImportRun(id, name, target) {
   } catch (e) { errToast(e); }
 }
 /* ---------- QQ音乐歌单页：像B站收藏一样直接浏览 ---------- */
+/* QQ音乐音质偏好（打包版把这个开关放在它的音效工作台里；工作台不并入，所以放在这里）。
+   三档：auto 按账号权限取最高可用 / high 320k 封顶（跳过无损）/ save 128k 省流。播放内核取直链时读取 */
+function qqQualBar() {
+  const cur = localStorage.getItem('bp.qqQual') || 'auto';
+  const chip = (q, label, tip) => `<button class="btn ${cur === q ? 'primary' : ''}" style="padding:5px 12px;font-size:12px" data-action="qq-qual" data-q="${q}" title="${tip}">${label}${cur === q ? ' ✓' : ''}</button>`;
+  return `<div class="toolbar" style="margin-bottom:12px">
+      <div class="tb-sub">QQ音乐音质（按账号权限取可用档位，下一首生效）</div>
+      <div class="sp"></div>
+      ${chip('auto', '自动 · 最高可用', '按账号权限自动取最高可用音质')}
+      ${chip('high', '320k 封顶', '跳过无损，节省流量')}
+      ${chip('save', '128k 省流', '最省流量')}
+    </div>`;
+}
 function viewQQMusic() {
   if (!state.qqUser) {
     return emptyState('登录QQ音乐账号', '登录后直接浏览你的QQ音乐歌单，点击即可播放',
@@ -5703,6 +5716,7 @@ function viewQQMusic() {
       <div class="sp"></div>
       <button class="btn ghost" data-action="qq-refresh">刷新</button>
     </div>
+    ${qqQualBar()}
     <div class="folder-grid">${pls.map(card).join('')}</div>`;
 }
 function viewQQPlDetail() {
@@ -5736,7 +5750,7 @@ function viewQQPlDetail() {
       <button class="p-add" data-action="qq-song-add" data-idx="${i}" title="把这首加入本地歌单">${ICON.plus}</button>
       <div class="p-dur">${fmt(it.duration)}</div>
     </div>`).join('');
-  return toolbar + `<div class="plist">${rows}</div>`;
+  return toolbar + qqQualBar() + `<div class="plist">${rows}</div>`;
 }
 async function loadQQFolders(force) {
   if (!state.qqUser) return;
