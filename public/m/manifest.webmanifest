@@ -1,0 +1,17 @@
+{
+  "name": "哔哩播放器遥控",
+  "short_name": "BiliPlayer",
+  "description": "手机遥控电脑上的哔哩播放器：切歌、音量、进度、点歌",
+  "start_url": "/m/",
+  "scope": "/m/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#121317",
+  "theme_color": "#121317",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

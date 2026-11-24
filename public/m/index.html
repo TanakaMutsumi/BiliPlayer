@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#121317">
+<meta name="referrer" content="no-referrer">
+<title>哔哩播放器 · 手机遥控</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="m.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- 配对屏 -->
+  <section id="scr-pin" class="screen">
+    <div class="pin-box">
+      <div class="pin-logo">
+        <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="15" rx="4" fill="#fb7299"/><path d="M7 2l3 3M17 2l-3 3" stroke="#fb7299" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M10 10.5v4l3.5-2z" fill="#fff"/></svg>
+      </div>
+      <h1>哔哩播放器</h1>
+      <p>连接到同一 WiFi 的电脑播放器<br>输入电脑「连接手机」里显示的配对码</p>
+      <input id="pin-input" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="····">
+      <button id="pin-go">连 接</button>
+      <p class="pin-err" id="pin-err"></p>
+      <a class="pin-apk" href="BiliPlayer.apk" download>📲 下载安卓APP安装包（推荐 · 桌面图标独立全屏）</a>
+      <button id="pin-standalone" class="pin-sa">不用电脑 · 独立模式（QQ音乐）→</button>
+    </div>
+  </section>
+
+  <!-- 主界面 -->
+  <section id="scr-main" class="screen hidden">
+    <header id="m-head">
+      <svg class="m-logo" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="15" rx="4" fill="#fb7299"/><path d="M7 2l3 3M17 2l-3 3" stroke="#fb7299" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M10 10.5v4l3.5-2z" fill="#fff"/></svg>
+      <span class="m-name">哔哩播放器</span>
+      <span class="m-dot" id="m-dot" title="连接状态"></span>
+    </header>
+
+    <main id="m-body">
+      <!-- 播放页（QQ音乐风格：封面取色动态背景 + 大彩胶） -->
+      <div class="page" id="pg-player">
+        <div class="np-bg"><div class="np-bg-blur" id="np-bg-blur"></div><div class="np-shade"></div><canvas id="np-viz" class="np-viz"></canvas></div>
+        <div class="np-inner">
+          <div class="vinyl" id="vinyl">
+            <div class="vinyl-sheen"></div>
+            <div class="vinyl-cover">
+              <img id="np-cover" alt="">
+              <div class="np-cover-empty">♪</div>
+            </div>
+            <div id="lyrics-box" class="lyrics-box hidden"><div id="lyrics-scroll"></div></div>
+          </div>
+          <div class="np-name">
+            <b id="np-title">未在播放</b>
+            <span id="np-up">在电脑上放一首歌吧</span>
+          </div>
+          <div class="np-quality" id="np-quality"></div>
+          <button id="p-mode" class="np-mode" title="切换播放设备">📱 播放到：电脑</button>
+          <div id="np-lyr" class="np-lyr-line hidden"></div>
+          <div class="np-seek">
+            <span id="t-cur">0:00</span>
+            <input type="range" id="seek" min="0" max="1000" value="0">
+            <span id="t-dur">0:00</span>
+          </div>
+          <div class="np-ctrls">
+            <button id="c-mode" class="cbtn" aria-label="播放模式"><span id="mode-ico" style="font-size:19px;line-height:1">🔁</span></button>
+            <button id="c-prev" class="cbtn" aria-label="上一首">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6a1 1 0 0 1 2 0v12a1 1 0 0 1-2 0z"/><path d="M18.5 6.2v11.6c0 .8-.9 1.3-1.6.9l-9-5.8a1.05 1.05 0 0 1 0-1.8l9-5.8c.7-.4 1.6.1 1.6.9z"/></svg>
+            </button>
+            <button id="c-toggle" class="cbtn big" aria-label="播放/暂停">
+              <svg id="ic-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .8.87 1.3 1.56.88l11-6.86a1.04 1.04 0 0 0 0-1.76l-11-6.86A1.04 1.04 0 0 0 8 5.14z"/></svg>
+              <svg id="ic-pause" viewBox="0 0 24 24" fill="currentColor" class="hidden"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+            </button>
+            <button id="c-more" class="cbtn" aria-label="更多选项" style="font-size:18px;font-weight:700">⋯</button>
+            <button id="c-next" class="cbtn" aria-label="下一首">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6a1 1 0 0 1 2 0v12a1 1 0 0 1-2 0z"/><path d="M5.5 6.2v11.6c0 .8.9 1.3 1.6.9l9-5.8a1.05 1.05 0 0 0 0-1.8l-9-5.8c-.7-.4-1.6.1-1.6.9z"/></svg>
+            </button>
+          </div>
+          <div class="np-quick">
+            <svg viewBox="0 0 24 24" class="vol-ico"><path d="M11 5L6 9H2v6h4l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+            <input type="range" id="vol" min="0" max="100" value="80">
+            <button id="q-fx" class="qbtn" aria-label="音效">🎛</button>
+            <button id="q-add" class="qbtn" aria-label="加入歌单">＋</button>
+          </div>
+          <div class="np-quick2">
+            <button id="q-queue" class="qbtn wide">📋 播放队列</button>
+            <button id="q-add2" class="qbtn wide">🎵 加入歌单</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 队列页 -->
+      <div class="page hidden" id="pg-queue">
+        <div class="page-cap">📋 播放队列 <span id="queue-count"></span><button id="queue-clear" class="cap-btn hidden" style="margin-left:auto">🗑 清空</button></div>
+        <div id="queue-list" class="rows"></div>
+      </div>
+
+      <!-- 歌单页 -->
+      <div class="page hidden" id="pg-pls">
+        <div class="page-cap">我的歌单 <button id="pl-new" class="cap-btn">＋ 新建</button></div>
+        <div id="pls-list" class="rows"></div>
+      </div>
+
+      <!-- 曲库页：B站收藏夹 / 搜索 / QQ·网易云歌单 / 小工具 -->
+      <div class="page hidden" id="pg-lib">
+        <div class="page-cap">B站搜索</div>
+        <div class="lib-search">
+          <input id="lib-q" placeholder="搜B站视频，点击结果在电脑播放">
+          <button id="lib-go">搜索</button>
+        </div>
+        <div id="lib-search-hist" class="fx-chips hidden"></div>
+        <div id="sg-phone" class="sg-phone hidden"></div>
+        <div id="lib-search-out" class="rows hidden"></div>
+        <div id="reco-sec" class="hidden">
+          <div class="page-cap">每日推荐 <span class="fx-sec-sub" id="reco-tip"></span><button id="reco-refresh" class="cap-btn">↻ 刷新</button><button id="reco-all" class="cap-btn">▶ 播放全部</button></div>
+          <div id="reco-row" class="reco-row"></div>
+        </div>
+        <div class="page-cap">B站收藏夹 <span class="fx-sec-sub" id="lib-bili-tip"></span><button id="bili-diag" class="cap-btn" title="逐步检查Cookie→接口→直链→试播">🔍 播放诊断</button><button id="lib-bili-logout" class="cap-btn" style="display:none" title="清除B站Cookie并退出">退出登录</button></div>
+        <div id="lib-favs" class="rows"></div>
+        <div class="page-cap">QQ音乐歌单 <span class="fx-sec-sub" id="lib-qq-tip"></span><button id="qq-diag" class="cap-btn" title="逐步检查登录→歌单→直链→试播">🔍 播放诊断</button><button id="lib-qq-logout" class="cap-btn" style="display:none" title="清除QQ音乐Cookie并退出">退出登录</button></div>
+        <div id="lib-qq" class="rows"></div>
+        <div class="page-cap">网易云歌单 <span class="fx-sec-sub" id="lib-ne-tip"></span><button id="lib-ne-logout" class="cap-btn" style="display:none" title="清除网易云Cookie并退出">退出登录</button></div>
+        <div id="lib-ne" class="rows"></div>
+        <div class="page-cap">小工具</div>
+        <div class="fx-toggles">
+          <button class="fx-toggle" id="lib-roam">🎲 随机漫游</button>
+          <button class="fx-toggle" id="lib-sleep">⏰ 定时关闭</button>
+          <button class="fx-toggle" id="lib-dm">💬 弹幕开关</button>
+        </div>
+        <div class="fx-sec-cap" id="lib-apk-cap">原生APP</div>
+        <div class="fx-toggles" id="lib-apk-btn">
+          <a class="fx-toggle" href="BiliPlayer.apk" download style="text-decoration:none">📲 下载安卓APP</a>
+        </div>
+      </div>
+
+      <!-- 通用内容源详情页（收藏夹/QQ/网易云歌单/搜索结果） -->
+      <div class="page hidden" id="pg-src">
+        <div class="tb"><button id="src-back" aria-label="返回">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button><b id="src-name"></b><span id="src-count" class="tb-sub"></span></div>
+        <div style="padding:0 12px 8px">
+          <button id="src-import" style="width:100%;background:rgba(251,114,153,.14);border:1px solid rgba(251,114,153,.55);color:#fb7299;font-size:14px;font-weight:600;padding:10px 0;border-radius:12px;cursor:pointer">⬇ 全部导入到本机歌单</button>
+        </div>
+        <div id="src-list" class="rows"></div>
+      </div>
+
+      <!-- 歌单曲目页 -->
+      <div class="page hidden" id="pg-tracks">
+        <div class="tb"><button id="tracks-back" aria-label="返回">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button><b id="tracks-name"></b><span id="tracks-count" class="tb-sub"></span></div>
+        <div id="tracks-list" class="rows"></div>
+      </div>
+
+      <!-- 音效页 -->
+      <div class="page hidden" id="pg-fx">
+        <div class="page-cap">🎛 音效 <span id="fx-cur"></span></div>
+        <div class="fx-sec-cap">快捷开关</div>
+        <div class="fx-toggles">
+          <button class="fx-toggle" id="fx-3d">3D 环绕</button>
+          <button class="fx-toggle" id="fx-vocal">人声消除</button>
+          <button class="fx-toggle" id="fx-viz">频谱可视化</button>
+        </div>
+        <div class="fx-sec-cap">音质增强 <span class="fx-sec-sub">提升低频下潜 / 高频通透 / 自动拉平音量</span></div>
+        <div class="fx-toggles">
+          <button class="fx-toggle" id="fx-sub">超低频增强</button>
+          <button class="fx-toggle" id="fx-air">空气感</button>
+          <button class="fx-toggle" id="fx-norm">响度归一化</button>
+        </div>
+        <div class="fx-sec-cap">QQ音质偏好 <span class="fx-sec-sub">按账号权限取最高可用档 · 下一首生效</span></div>
+        <div class="fx-toggles">
+          <button class="fx-toggle on" id="qqq-auto">自动·最高可用</button>
+          <button class="fx-toggle" id="qqq-high">320k封顶</button>
+          <button class="fx-toggle" id="qqq-save">128k省流</button>
+        </div>
+        <div class="fx-sec-cap">均衡器 <span class="fx-sec-sub">七段手动微调（本机/独立模式）</span></div>
+        <div id="fx-eqrow"></div>
+        <div class="fx-sec-cap">音效预设 <span class="fx-sec-sub">点一下 · 电脑立刻换音效</span></div>
+        <div id="fx-presets" class="fx-chips"></div>
+        <div class="fx-sec-cap">风格均衡</div>
+        <div id="fx-eqs" class="fx-chips"></div>
+        <div class="fx-sec-cap">声音排查</div>
+        <div class="fx-toggles">
+          <button class="fx-toggle" id="fx-testtone">🔊 播放测试音</button>
+        </div>
+        <div class="fx-sec-sub" id="fx-testtip" style="color:#8a8d97;font-size:13px;margin-top:6px;line-height:1.5">听到「嘀——」说明手机音频通道正常；听不到就是系统媒体音量/静音键的问题，和播放器无关</div>
+        <div class="fx-sec-sub" id="fx-engine-info" style="color:#9aa0ad;font-size:12.5px;margin-top:8px;line-height:1.6"></div>
+        <div class="fx-sec-cap">B站音质 <span class="fx-sec-sub" id="q-hint">当前：高音质</span></div>
+        <div class="fx-toggles">
+          <button class="fx-toggle on" id="q-high">高音质</button>
+          <button class="fx-toggle" id="q-save">省流量</button>
+        </div>
+        <div class="fx-sec-sub" style="color:#8a8d97;font-size:13px;margin-top:6px;line-height:1.5">高音质会拉取该视频可用的最高画质（音轨码率随之提高 2~3 倍）；切换后下一首生效</div>
+      </div>
+    </main>
+
+    <div id="mini" class="hidden">
+      <div id="mini-prog"></div>
+      <img id="mini-cover" alt="">
+      <div class="mini-main"><b id="mini-title">未在播放</b><span id="mini-up"></span></div>
+      <button id="mini-toggle" aria-label="播放/暂停">▶</button>
+      <button id="mini-next" aria-label="下一首">⏭</button>
+    </div>
+    <nav id="m-tabs">
+      <button data-tab="player" class="on">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        <span>播放</span>
+      </button>
+      <button data-tab="queue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h9M4 18h9"/><path d="M17 12.5v6l5-3z" fill="currentColor" stroke="none"/></svg>
+        <span>队列</span>
+      </button>
+      <button data-tab="pls">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.4" fill="currentColor" stroke="none"/></svg>
+        <span>歌单</span>
+      </button>
+      <button data-tab="fx">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 4v6M5 14v6M12 4v10M12 18v2M19 4v2M19 10v10"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="16" r="2"/><circle cx="19" cy="8" r="2"/></svg>
+        <span>音效</span>
+      </button>
+      <button data-tab="lib">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h3a2 2 0 0 1 1.6.8l1 1.4a1 1 0 0 0 .8.4h4.6A2.5 2.5 0 0 1 20 8.1v9.4a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z" /></svg>
+        <span>曲库</span>
+      </button>
+    </nav>
+  </section>
+
+  <div id="toast" class="hidden"></div>
+  <div id="sheet-mask" class="hidden"></div>
+  <div id="sheet" class="hidden"></div>
+</div>
+<script>
+/* 异步原生HTTP：优先 ahttp 回调桥（不阻塞JS线程，解决歌单页卡顿），旧APK回退同步桥，浏览器回退fetch */
+(function () {
+  'use strict';
+  let seq = 0;
+  const pend = new Map();
+  window.__ahttp = function (id, resp) {
+    const r = pend.get(id);
+    if (r) { pend.delete(id); r(resp); }
+  };
+  window.bHttp = async function (method, url, body, timeoutMs) {
+    const _lg = function (m) { try { if (window.androidApi && androidApi.bpLog) androidApi.bpLog(m); } catch (e) { } };
+    if (window.androidApi && window.androidApi.ahttp) {
+      return new Promise(res => {
+        const id = 'c' + (++seq);
+        pend.set(id, res);
+        _lg('bHttp进入 ' + id + ' ' + method + ' ' + String(url).slice(0, 90));
+        try { window.androidApi.ahttp(method || 'GET', url, body || '', id); _lg('ahttp已派发 ' + id); }
+        catch (e) { pend.delete(id); res({ code: -1, body: '', err: String(e) }); }
+        setTimeout(function () { if (pend.has(id)) { pend.delete(id); _lg('bHttp超时 ' + id); res({ code: -1, body: '', err: 'timeout' }); } }, timeoutMs || 30000);
+      });
+    }
+    if (window.androidApi && window.androidApi.http) {
+      try { return JSON.parse(window.androidApi.http(method || 'GET', url, body || '')); }
+      catch (e) { return { code: -1, body: '', err: String(e) }; }
+    }
+    try {
+      const r = await fetch(url, {
+        method: method || 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        body: (method && method !== 'GET') ? (body || undefined) : undefined
+      });
+      return { code: r.status, body: await r.text() };
+    } catch (e) { return { code: -1, body: '', err: String(e) }; }
+  };
+  /* 诊断：JS错误以Toast显示（release WebView 无 console，出问题时用户能直接看到原因） */
+  window.onerror = function (msg, src, line, col) {
+    try { if (String(msg).indexOf('Script error') !== -1) return; if (window.androidApi && androidApi.toast) androidApi.toast('JS错误: ' + msg + ' @' + String(src || '').split('/').pop() + ':' + line + ':' + col); } catch (e) { }
+  };
+  window.addEventListener('unhandledrejection', function (e) {
+    try {
+      const m = String((e.reason && e.reason.message) || e.reason || '');
+      if (/Script error/i.test(m)) return; // 跨域掩码错误无信息量
+      if (window.androidApi && androidApi.toast) androidApi.toast('错误: ' + m);
+    } catch (err) { }
+  });
+})();
+</script>
+<script src="md5.js"></script>
+<script src="qqsa.js"></script>
+<script src="blsa.js"></script>
+<script src="nesa.js"></script>
+<script src="m.js"></script>
+</body>
+</html>
