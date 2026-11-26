@@ -58,3 +58,12 @@ data/                 网页模式的数据目录（软件版数据在 %APPDATA%
 
 - 内嵌服务只监听本机 127.0.0.1，局域网内其他设备无法访问。
 - 登录凭证与歌单仅存本机 `%APPDATA%\BiliPlayer`；删除该文件夹即退出登录并清空数据。
+
+## 许可证
+
+本项目以 [GNU AGPL-3.0](LICENSE) 授权。
+
+两个内置组件**不在此授权范围内**，仅按各自条款授权（详见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)）：
+
+- `public/vendor/folia/` —— 其 `NOTICE.txt` 声明该拷贝仅供个人使用、不对外分发
+- `public/vendor/pvtool/` —— 非商业许可证，保留所有权利
