@@ -78,8 +78,8 @@
 
   const CJK = /[\u2e80-\u30ff\u3400-\u9fff\uac00-\ud7af\uf900-\ufaff\uff00-\uffef]/;
   const PUNC = /[，。！？、；：,.!?;:'"“”‘’（）()《》〈〉【】\[\]…—–\-~～]/;
-  const STYLES = { flow: 1, fume: 1, diorama: 1, chat: 1, cinema: 1, hanabi: 1, vertical: 1, poem: 1, cloud: 1, confess: 1, fog: 1, lumiere: 1, tempera: 1, ring: 1, cadenza: 1, monet: 1, pvharu: 1, pvcyber: 1, pvweb: 1 };
-  const FOLIA_STYLES = { lumiere: 1, hanabi: 1, poem: 1, tempera: 1, confess: 1, cloud: 1, ring: 1, cadenza: 1, fog: 1, chat: 1, cinema: 1, monet: 1, pvharu: 1, pvcyber: 1, pvweb: 1 };
+  const STYLES = { flow: 1, fume: 1, diorama: 1, chat: 1, cinema: 1, hanabi: 1, vertical: 1, poem: 1, cloud: 1, confess: 1, fog: 1, lumiere: 1, tempera: 1, ring: 1, cadenza: 1, monet: 1, pvharu: 1, pvcyber: 1, pvweb: 1, jizura: 1 };
+  const FOLIA_STYLES = { lumiere: 1, hanabi: 1, poem: 1, tempera: 1, confess: 1, cloud: 1, ring: 1, cadenza: 1, fog: 1, chat: 1, cinema: 1, monet: 1, pvharu: 1, pvcyber: 1, pvweb: 1, jizura: 1 };
 
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 

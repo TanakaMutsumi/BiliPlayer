@@ -180,6 +180,7 @@ const MV_STYLE_DEFS = [
   { id: 'pvharu', label: '春日', desc: 'PV Tool 试点' },
   { id: 'pvcyber', label: '赛博', desc: 'PV Tool 试点' },
   { id: 'pvweb', label: '蛛网', desc: 'PV Tool 试点' },
+  { id: 'jizura', label: '字面', desc: 'JIZURA 文字PV' },
 ];
 const MV_STYLE_IDS = new Set(MV_STYLE_DEFS.map(x => x.id));
 const MV_MOODS = ['auto', 'dream', 'night', 'rain', 'warm', 'neon', 'cover', 'lineart'];
@@ -605,13 +606,65 @@ function setDirector(on, quiet) {
     if (App.mv.directorBase && App.mv.style !== App.mv.directorBase) crossfadeTo(App.mv.directorBase);
   }
 }
+function rgbHex(c) {
+  if (Array.isArray(c)) return '#' + c.map(x => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0')).join('');
+  return typeof c === 'string' ? c : '';
+}
+function syncJizuraTune(s) {
+  if (!s) return;
+  const box = document.querySelector('[data-tune-group="jizura"]');
+  if (!box) return;
+  const fill = (sel, items, value, autoLabel) => {
+    if (!sel) return;
+    const cur = sel.value;
+    const opts = (autoLabel ? '<option value="">' + autoLabel + '</option>' : '') +
+      (items || []).map(x => '<option value="' + esc(x.id) + '">' + esc(x.label || x.id) + '</option>').join('');
+    if (sel.innerHTML !== opts) sel.innerHTML = opts;
+    const want = value || '';
+    if (want && !(items || []).some(x => x.id === want)) sel.value = cur || '';
+    else sel.value = want;
+  };
+  const opts = s.options || {};
+  const presetBox = box.querySelector('[data-jz-presets]');
+  if (presetBox) presetBox.innerHTML = (opts.presets || []).map(p => '<button class="jz-preset' + (p.id === s.preset ? ' active' : '') + '" data-action="jizura-preset" data-preset="' + p.id + '" title="' + esc(p.label) + '"><span class="jz-preset-thumb preset-' + p.id + '"></span><b>' + esc(p.label) + '</b></button>').join('');
+  fill(box.querySelector('[data-jz="style"]'), opts.styles || [], s.style, '自动');
+  fill(box.querySelector('[data-jz="mood"]'), opts.moods || [], s.mood, '自动');
+  for (const k of ['density', 'glitch', 'decor']) {
+    const inp = box.querySelector('[data-jz-fx="' + k + '"]');
+    const val = s.fx && s.fx[k] != null ? s.fx[k] : 0.55;
+    if (inp) inp.value = String(val);
+    const em = box.querySelector('[data-jz-val="' + k + '"]');
+    if (em) em.textContent = Number(val).toFixed(2);
+  }
+  const title = box.querySelector('[data-jz-opt="title"]');
+  if (title) title.checked = !!s.titleCard;
+  const overlay = box.querySelector('[data-jz-opt="overlay"]');
+  if (overlay) overlay.checked = !!s.overlay;
+  const fusion = box.querySelector('[data-jz-opt="fusion"]');
+  if (fusion) fusion.checked = !!s.fusion;
+  const theme = box.querySelector('[data-jz-opt="theme"]');
+  if (theme) theme.checked = !!s.themeColors;
+  const lock = box.querySelector('[data-action="jizura-lock"]');
+  if (lock) { lock.textContent = s.locked ? '已锁定' : '锁定'; lock.classList.toggle('active', !!s.locked); }
+  const fav = box.querySelector('[data-action="jizura-fav"]');
+  if (fav) { fav.textContent = s.favorite ? '已收藏' : '收藏'; fav.classList.toggle('active', !!s.favorite); }
+  const st = box.querySelector('[data-jz-status]');
+  const bpmTxt = s.bpm ? (' · ' + s.bpm + ' BPM' + (s.tempoSegments > 1 && s.bpmMax - s.bpmMin >= 2 ? ' · 分段 ' + s.bpmMin + '–' + s.bpmMax : '')) : '';
+  const keyTxt = s.keyLabel && s.keyConfidence >= 0.15 ? (' · ' + s.keyLabel) : '';
+  if (st) st.textContent = s.building ? '正在构建 JIZURA 画面…' : ('seed ' + s.seed + ' · 第 ' + (s.historyIndex + 1) + '/' + Math.max(1, s.historyLength) + ' 版' + (s.lastBuildMs ? ' · plan ' + s.lastBuildMs + 'ms' : '') + bpmTxt + keyTxt + (s.locked ? ' · 已锁定' : ''));
+  const favs = box.querySelector('[data-jz-favs]');
+  if (favs) {
+    favs.innerHTML = (s.favoritesForTrack || []).map(f => '<span class="jz-fav"><button class="btn" data-action="jizura-fav-use" data-seed="' + f.seed + '" title="' + esc(f.title || '') + '">★ ' + f.seed + '</button><button class="jz-fav-del" data-action="jizura-fav-del" data-seed="' + f.seed + '" title="删除收藏">×</button></span>').join('');
+  }
+}
 function updateTunePanel() {
   const box = document.getElementById('mv-tune');
   if (!box) return;
   const st = App.mv.style;
-  const show = st === 'flow' || st === 'vertical';
+  const show = st === 'flow' || st === 'vertical' || st === 'jizura';
   box.classList.toggle('hidden', !show);
   if (!show) return;
+  if (st === 'jizura' && window.JizuraBridge) syncJizuraTune(JizuraBridge.getState());
   const title = document.getElementById('mv-tune-title');
   if (title) title.textContent = mvStyleLabel(st);
   box.querySelectorAll('[data-tune-group]').forEach(g => g.classList.toggle('hidden', g.dataset.tuneGroup !== st));
@@ -646,6 +699,7 @@ function setMVStyle(style, keepTransition) {
   const panel = document.getElementById('mv-style-panel');
   if (panel) panel.classList.add('hidden');
   if (window.FoliaBridge) FoliaBridge.setStyle(App.mv.style);
+  if (window.JizuraBridge) JizuraBridge.setStyle(App.mv.style);
   syncMVSubtitle();
   syncMVInstrumental();
 }
@@ -782,6 +836,7 @@ function syncMV() {
   }
   syncMVVideo();
   if (window.FoliaBridge) FoliaBridge.sync();
+  if (window.JizuraBridge) JizuraBridge.sync();
   const FOLIA_STYLES = new Set(['lumiere', 'hanabi', 'poem', 'tempera', 'confess', 'cloud', 'fog', 'ring', 'cadenza', 'chat', 'cinema', 'monet', 'pvharu', 'pvcyber', 'pvweb']);
   const foliaStyle = on && FOLIA_STYLES.has(App.mv.style) ? App.mv.style : '';
   if (App._foliaCheckStyle !== foliaStyle) {
@@ -3129,6 +3184,7 @@ function viewNowplaying() {
           <div class="mv-vignette"></div>
           <div class="mv-lumiere" id="mv-lumiere"></div>
           <div class="mv-folia-host" id="mv-folia-lumiere"></div>
+          <div class="mv-jizura-host" id="mv-jizura"></div>
           <div class="mv-grade" id="mv-grade"></div>
           <div class="mv-fx" id="mv-fx"></div>
           <div class="mv-top">
@@ -3174,6 +3230,27 @@ function viewNowplaying() {
                 <label><span>等待列亮度</span><input type="range" min="0.2" max="0.9" step="0.05" data-tune="vWait" value="${App.mv.tune.vWait}"><em data-val="vWait">${Number(App.mv.tune.vWait).toFixed(2)}</em></label>
                 <label><span>每列字数</span><input type="range" min="3" max="10" step="1" data-tune="vCols" value="${App.mv.tune.vCols}"><em data-val="vCols">${App.mv.tune.vCols}</em></label>
                 <label><span>列距</span><input type="range" min="10" max="60" step="2" data-tune="vGap" value="${App.mv.tune.vGap}"><em data-val="vGap">${App.mv.tune.vGap}</em></label>
+              </div>
+              <div class="mv-tune-group" data-tune-group="jizura">
+                <div class="jz-presets" data-jz-presets></div>
+                <label><span>风格</span><select data-jz="style"></select></label>
+                <label><span>情绪</span><select data-jz="mood"></select></label>
+                <label><span>密度</span><input type="range" min="0" max="1" step="0.01" data-jz-fx="density"><em data-jz-val="density"></em></label>
+                <label><span>故障</span><input type="range" min="0" max="1" step="0.01" data-jz-fx="glitch"><em data-jz-val="glitch"></em></label>
+                <label><span>装饰</span><input type="range" min="0" max="1" step="0.01" data-jz-fx="decor"><em data-jz-val="decor"></em></label>
+                <div class="mv-tune-actions">
+                  <button class="btn" data-action="jizura-roll">换一版</button>
+                  <button class="btn" data-action="jizura-prev">上一版</button>
+                  <button class="btn" data-action="jizura-next">下一版</button>
+                  <button class="btn" data-action="jizura-lock">锁定</button>
+                  <button class="btn" data-action="jizura-fav">收藏</button>
+                </div>
+                <label class="mv-tune-check"><input type="checkbox" data-jz-opt="title">标题卡</label>
+                <label class="mv-tune-check"><input type="checkbox" data-jz-opt="overlay">透明背景</label>
+                <label class="mv-tune-check"><input type="checkbox" data-jz-opt="fusion">封面融合</label>
+                <label class="mv-tune-check"><input type="checkbox" data-jz-opt="theme">跟随主题色</label>
+                <div class="jz-status" data-jz-status></div>
+                <div class="jz-favs" data-jz-favs></div>
               </div>
             </div>
           </div>
@@ -6674,6 +6751,14 @@ function bindEvents() {
       case 'viz-open': openVizSettings(); break;
       case 'mv-toggle': toggleMV(); break;
       case 'mv-style': if (App.mv.director) setDirector(false, true); setMVStyle(t.dataset.style); break;
+      case 'jizura-preset': if (window.JizuraBridge) JizuraBridge.setPreset(t.dataset.preset); break;
+      case 'jizura-roll': if (window.JizuraBridge && !JizuraBridge.reroll()) toast('已锁定当前版本', ''); break;
+      case 'jizura-prev': if (window.JizuraBridge) JizuraBridge.prev(); break;
+      case 'jizura-next': if (window.JizuraBridge) JizuraBridge.next(); break;
+      case 'jizura-lock': if (window.JizuraBridge) JizuraBridge.toggleLock(); break;
+      case 'jizura-fav': if (window.JizuraBridge) JizuraBridge.toggleFavorite(); break;
+      case 'jizura-fav-use': if (window.JizuraBridge) JizuraBridge.applyFavorite(t.dataset.seed); break;
+      case 'jizura-fav-del': if (window.JizuraBridge) JizuraBridge.removeFavorite(t.dataset.seed); break;
       case 'mv-director': setDirector(!App.mv.director); break;
       case 'mv-lowpower': setLowPower(!App.mv.lowPower); break;
       case 'mv-section': setSectionSwitch(!App.mv.sectionSwitch); break;
@@ -9416,6 +9501,7 @@ async function init() {
     if (App.mv.lastChorus === on) return;
     App.mv.lastChorus = on;
     if (window.FoliaBridge && FoliaBridge.setPvFx) FoliaBridge.setPvFx(on);
+    if (window.JizuraBridge && JizuraBridge.setChorus) JizuraBridge.setChorus(on);
     if (App.mv.director && App.mv.sectionSwitch) {
       if (on) crossfadeTo(App.mv.directorChorus);
       else if (App.mv.directorBase) crossfadeTo(App.mv.directorBase);
@@ -9440,6 +9526,29 @@ async function init() {
     try { localStorage.setItem('bp.mvTune', JSON.stringify(App.mv.tune)); } catch (err) {}
     updateTunePanel();
     if (window.LyricMV && LyricMV.setTune) LyricMV.setTune(App.mv.tune);
+  });
+  document.addEventListener('input', (e) => {
+    const fx = e.target && e.target.closest ? e.target.closest('[data-jz-fx]') : null;
+    if (!fx || !window.JizuraBridge) return;
+    JizuraBridge.setFx(fx.dataset.jzFx, Number(fx.value));
+    syncJizuraTune(JizuraBridge.getState());
+  });
+  document.addEventListener('change', (e) => {
+    const sel = e.target && e.target.closest ? e.target.closest('[data-jz]') : null;
+    if (sel && window.JizuraBridge) {
+      if (sel.dataset.jz === 'style') JizuraBridge.setStyleKey(sel.value);
+      else if (sel.dataset.jz === 'mood') JizuraBridge.setMood(sel.value);
+      syncJizuraTune(JizuraBridge.getState());
+      return;
+    }
+    const opt = e.target && e.target.closest ? e.target.closest('[data-jz-opt]') : null;
+    if (!opt || !window.JizuraBridge) return;
+    const k = opt.dataset.jzOpt;
+    if (k === 'title') JizuraBridge.setTitleCard(opt.checked);
+    else if (k === 'overlay') JizuraBridge.setOverlay(opt.checked);
+    else if (k === 'fusion') JizuraBridge.setFusion(opt.checked);
+    else if (k === 'theme') JizuraBridge.setThemeColors(opt.checked);
+    syncJizuraTune(JizuraBridge.getState());
   });
   document.addEventListener('input', (e) => {
     if (e.target && e.target.id === 'ne-pick-search') nePickFilter(e.target.value);
@@ -9476,6 +9585,43 @@ async function init() {
       onFailure: (style, err) => {
         if (App.mv.style !== style) return;
         try { toast(err ? '这个样式运行出错，已切回流光' : '这个样式加载失败，已切回流光', ''); } catch (e) {}
+        setMVStyle('flow');
+      }
+    });
+  }
+  if (window.JizuraBridge) {
+    JizuraBridge.configure({
+      getStyle: () => App.mv.style,
+      isMVOn: () => !!(App.mv.on && state.view.name === 'nowplaying' && Player.S.track && Player.S.mode !== 'video'),
+      getTrack: () => Player.S.track,
+      getLines: () => (state.lyrics && state.lyrics.lines) || [],
+      getInstrumental: () => !!(state.lyrics && state.lyrics.instrumental),
+      getLyricKey: () => {
+        const L = state.lyrics;
+        return L ? [L.source, L.quality, L.offsetMs, L.lines && L.lines.length, JSON.stringify(L.lineOffsets || {})].join('|') : '';
+      },
+      getTime: () => { try { return Player.activeEl().currentTime || 0; } catch (e) { return 0; } },
+      getDuration: () => { try { return Player.activeEl().duration || 0; } catch (e) { return 0; } },
+      getBpm: () => (App.mv.bpmInfo && App.mv.bpmInfo.bpm) || 0,
+      getBpmPhase: () => (App.mv.bpmInfo && App.mv.bpmInfo.phase) || 0,
+      getBeats: () => (App.mv.bpmInfo && Array.isArray(App.mv.bpmInfo.beats) ? App.mv.bpmInfo.beats : null),
+      getBpmSegments: () => (App.mv.bpmInfo && Array.isArray(App.mv.bpmInfo.segments) ? App.mv.bpmInfo.segments : null),
+      getKey: () => (App.mv.bpmInfo && App.mv.bpmInfo.keyInfo) || null,
+      getColors: () => {
+        try {
+          const p = window.LyricMV && LyricMV.getPalette && LyricMV.getPalette();
+          if (p && p.accent) return { accent: rgbHex(p.accent), ghostA: rgbHex(p.light || p.accent), ghostB: rgbHex(p.accent) };
+        } catch (e) {}
+        const th = App.mv.aiTheme && App.mv.aiTheme.theme;
+        const c = th && (th.dark || th.light);
+        return c ? { accent: c.accentColor || c.primaryColor, ghostA: c.secondaryColor || c.primaryColor, ghostB: c.primaryColor || c.accentColor } : null;
+      },
+      getLowPower: () => !!App.mv.lowPower,
+      getHost: () => document.getElementById('mv-jizura'),
+      onUpdate: (s) => { try { if (App.mv.style === 'jizura') syncJizuraTune(s); } catch (e) {} },
+      onFailure: (style, err) => {
+        if (App.mv.style !== style) return;
+        try { toast(err ? 'JIZURA 运行出错，已切回流光' : 'JIZURA 加载失败，已切回流光', ''); } catch (e) {}
         setMVStyle('flow');
       }
     });
